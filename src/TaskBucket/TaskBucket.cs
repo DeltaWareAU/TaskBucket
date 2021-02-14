@@ -35,8 +35,6 @@ namespace TaskBucket
             }
         }
 
-        public int Instances { get; set; } = 10;
-
         public TaskBucket(IServiceProvider services, IBucketOptions options)
         {
             _services = services ?? throw new ArgumentNullException(nameof(services));
@@ -75,7 +73,7 @@ namespace TaskBucket
         {
             lock(_jobLock)
             {
-                if(_runningJobs.Count < Instances && _jobQueue.TryDequeue(out ITask job))
+                if(_runningJobs.Count < _options.Instances && _jobQueue.TryDequeue(out ITask job))
                 {
                     StartJobAsync(job);
                 }
