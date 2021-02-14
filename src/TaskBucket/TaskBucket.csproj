@@ -12,7 +12,8 @@
     <Description>Hasle free asynchronous background tasks</Description>
     <PackageTags>Tasks; Background; Async; Asynchronous</PackageTags>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>1.0.0.2-prerelease</Version>
+    <Version>1.0.0.3-prerelease</Version>
+    <PackageReleaseNotes>FIX | Issue where scope was being disposed of before task finished work</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

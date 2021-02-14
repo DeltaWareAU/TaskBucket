@@ -22,11 +22,11 @@ namespace TaskBucket
             _onJobFinished = onJobFinished;
         }
 
-        public async Task ExecuteAsync(IServiceScope scope)
+        public async Task ExecuteAsync(IServiceProvider services)
         {
-            if(scope == null)
+            if(services == null)
             {
-                throw new ArgumentNullException(nameof(scope));
+                throw new ArgumentNullException(nameof(services));
             }
 
             if(Status != TaskStatus.Pending)
@@ -36,7 +36,7 @@ namespace TaskBucket
 
             try
             {
-                T instance = scope.ServiceProvider.GetService<T>();
+                T instance = services.GetService<T>();
 
                 Status = TaskStatus.Running;
 
@@ -56,7 +56,7 @@ namespace TaskBucket
             }
         }
     }
-    
+
     internal class Task<T, TValue>: ITask
     {
         private readonly TValue _value;
@@ -78,11 +78,11 @@ namespace TaskBucket
             _onJobFinished = onJobFinished;
         }
 
-        public async Task ExecuteAsync(IServiceScope scope)
+        public async Task ExecuteAsync(IServiceProvider services)
         {
-            if(scope == null)
+            if(services == null)
             {
-                throw new ArgumentNullException(nameof(scope));
+                throw new ArgumentNullException(nameof(services));
             }
 
             if(Status != TaskStatus.Pending)
@@ -92,7 +92,7 @@ namespace TaskBucket
 
             try
             {
-                T instance = scope.ServiceProvider.GetService<T>();
+                T instance = services.GetService<T>();
 
                 Status = TaskStatus.Running;
 

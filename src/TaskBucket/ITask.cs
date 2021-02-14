@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System;
 using System.Threading.Tasks;
 
 namespace TaskBucket
 {
     internal interface ITask: ITaskReference
     {
-        Task ExecuteAsync(IServiceScope scope);
+        Task ExecuteAsync(IServiceProvider services);
     }
 }

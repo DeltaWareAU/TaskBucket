@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -61,7 +60,7 @@ namespace TaskBucket
         {
             List<ITaskReference> references = new List<ITaskReference>();
 
-            foreach (TValue value in values)
+            foreach(TValue value in values)
             {
                 references.Add(new Task<T, TValue>(value, action, OnJobComplete));
             }
@@ -80,15 +79,16 @@ namespace TaskBucket
             }
         }
 
-        private Task StartJobAsync(ITask task)
+        private void StartJobAsync(ITask task)
         {
             _runningJobs.Add(task.Identity, task);
 
-            return Task.Factory.StartNew(() =>
+            Task.Factory.StartNew(async () =>
             {
-                using IServiceScope scope = _services.CreateScope();
-
-                task.ExecuteAsync(scope);
+                using(IServiceScope scope = _services.CreateScope())
+                {
+                    await task.ExecuteAsync(scope.ServiceProvider);
+                }
             }, _cancellationToken.Token);
         }
 

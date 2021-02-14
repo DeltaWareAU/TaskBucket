@@ -1,5 +1,5 @@
-﻿using System;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace TaskBucket
 {
@@ -7,7 +7,7 @@ namespace TaskBucket
     {
         public static void AddTaskBucket(this IServiceCollection services, Action<IBucketOptions> optionsBuilder = null)
         {
-            if (services == null)
+            if(services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
