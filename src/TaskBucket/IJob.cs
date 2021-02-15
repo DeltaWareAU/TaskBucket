@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace TaskBucket
 {
-    internal interface ITask: ITaskReference
+    public interface IJob: IJobReference
     {
         Task ExecuteAsync(IServiceProvider services);
     }

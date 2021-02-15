@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 
 namespace TaskBucket
 {
-    internal class Task<T>: ITask
+    internal class Job<T>: IJob
     {
         private readonly Func<T, Task> _task;
 
-        private readonly Action<ITaskReference> _onJobFinished;
+        private readonly Action<IJobReference> _onJobFinished;
 
         public Guid Identity { get; } = Guid.NewGuid();
 
@@ -16,7 +16,7 @@ namespace TaskBucket
 
         public Exception Exception { get; private set; }
 
-        public Task(Func<T, Task> task, Action<ITaskReference> onJobFinished)
+        public Job(Func<T, Task> task, Action<IJobReference> onJobFinished)
         {
             _task = task;
             _onJobFinished = onJobFinished;
@@ -57,13 +57,13 @@ namespace TaskBucket
         }
     }
 
-    internal class Task<T, TValue>: ITask
+    internal class Job<T, TValue>: IJob
     {
         private readonly TValue _value;
 
         private readonly Func<T, TValue, Task> _task;
 
-        private readonly Action<ITaskReference> _onJobFinished;
+        private readonly Action<IJobReference> _onJobFinished;
 
         public Guid Identity { get; } = Guid.NewGuid();
 
@@ -71,7 +71,7 @@ namespace TaskBucket
 
         public Exception Exception { get; private set; }
 
-        public Task(TValue value, Func<T, TValue, Task> task, Action<ITaskReference> onJobFinished)
+        public Job(TValue value, Func<T, TValue, Task> task, Action<IJobReference> onJobFinished)
         {
             _value = value;
             _task = task;

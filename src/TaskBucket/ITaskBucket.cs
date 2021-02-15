@@ -6,9 +6,9 @@ namespace TaskBucket
 {
     public interface ITaskBucket
     {
-        List<ITaskReference> Tasks { get; }
+        List<IJobReference> Tasks { get; }
 
-        ITaskReference AddBackgroundTask<T>(Func<T, Task> action);
-        List<ITaskReference> AddBackgroundTasks<T, TValue>(IEnumerable<TValue> values, Func<T, TValue, Task> action);
+        IJobReference AddBackgroundJob<T>(Func<T, Task> action);
+        List<IJobReference> AddBackgroundTasks<T, TValue>(IEnumerable<TValue> values, Func<T, TValue, Task> action);
     }
 }

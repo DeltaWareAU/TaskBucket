@@ -2,7 +2,7 @@
 
 namespace TaskBucket
 {
-    public interface ITaskReference
+    public interface IJobReference
     {
         Guid Identity { get; }
 
