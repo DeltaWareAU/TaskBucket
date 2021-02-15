@@ -1,15 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace TaskBucket
 {
-    public class TaskBucket: ITaskBucket
+    internal class TaskBucket: ITaskBucket
     {
         private readonly IServiceProvider _services;
 
@@ -131,20 +130,6 @@ namespace TaskBucket
 
         //#endregion
 
-        public static void Wait(IJobReference job)
-        {
-            while (job.Status == TaskStatus.Pending || job.Status == TaskStatus.Running)
-            {
-                Thread.Sleep(25);
-            }
-        }
 
-        public static void WaitAll(params IJobReference[] jobs)
-        {
-            foreach (IJobReference job in jobs)
-            {
-                Wait(job);
-            }
-        }
     }
 }

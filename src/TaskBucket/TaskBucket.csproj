@@ -12,10 +12,8 @@
     <Description>Hasle free asynchronous background tasks</Description>
     <PackageTags>Tasks; Background; Async; Asynchronous</PackageTags>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>1.0.0.4-prerelease</Version>
-    <PackageReleaseNotes>ADDED | TaskBuck.Wait &amp; WaitAll methods
-
-REMOVED | TaskCancelation</PackageReleaseNotes>
+    <Version>1.0.0.5-prerelease</Version>
+    <PackageReleaseNotes>ADDED | JobHelper</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
