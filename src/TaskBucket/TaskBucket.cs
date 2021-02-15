@@ -88,10 +88,11 @@ namespace TaskBucket
 
             Task.Factory.StartNew(async () =>
             {
-                using(IServiceScope scope = _services.CreateScope())
-                {
-                    await job.ExecuteAsync(scope.ServiceProvider);
-                }
+                IServiceScope scope = _services.CreateScope();
+                
+                await job.ExecuteAsync(scope.ServiceProvider);
+                
+                scope.Dispose();
             });
         }
 

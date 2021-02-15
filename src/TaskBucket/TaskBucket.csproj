@@ -12,8 +12,8 @@
     <Description>Hasle free asynchronous background tasks</Description>
     <PackageTags>Tasks; Background; Async; Asynchronous</PackageTags>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>1.0.0.5-prerelease</Version>
-    <PackageReleaseNotes>ADDED | JobHelper</PackageReleaseNotes>
+    <Version>1.0.0.6-prerelease</Version>
+    <PackageReleaseNotes>CHANGED | How Service Scope is being disposed, as the current method throws OperationCancelledException</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
