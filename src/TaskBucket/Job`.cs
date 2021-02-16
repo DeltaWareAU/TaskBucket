@@ -14,6 +14,8 @@ namespace TaskBucket
 
         public string Source { get; }
 
+        public int ThreadIndex { get; private set; } = -1;
+
         public Guid Identity { get; } = Guid.NewGuid();
 
         public TaskStatus Status { get; private set; } = TaskStatus.Pending;
@@ -28,12 +30,14 @@ namespace TaskBucket
             Source = typeof(T).Name;
         }
 
-        public async Task ExecuteAsync(IServiceProvider services)
+        public async Task ExecuteAsync(IServiceProvider services, int threadIndex)
         {
             if(services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
+
+            ThreadIndex = threadIndex;
 
             if(Status != TaskStatus.Pending)
             {
@@ -74,27 +78,31 @@ namespace TaskBucket
 
         public string Source { get; }
 
+        public int ThreadIndex { get; private set; } = -1;
+
         public Guid Identity { get; } = Guid.NewGuid();
 
         public TaskStatus Status { get; private set; } = TaskStatus.Pending;
 
         public Exception Exception { get; private set; }
 
-        public Job(TValue value, Func<T, TValue, Task> task, Action<IJobReference> onJobFinished)
+        public Job(Func<T, TValue, Task> task, TValue value, Action<IJobReference> onJobFinished)
         {
-            _value = value;
             _task = task;
+            _value = value;
             _onJobFinished = onJobFinished;
 
             Source = typeof(T).Name;
         }
 
-        public async Task ExecuteAsync(IServiceProvider services)
+        public async Task ExecuteAsync(IServiceProvider services, int threadIndex)
         {
             if(services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
+
+            ThreadIndex = threadIndex;
 
             if(Status != TaskStatus.Pending)
             {

@@ -32,12 +32,12 @@ namespace TaskBucket
             {
                 List<IJobReference> jobs;
 
-                lock (_queueLock)
+                lock(_queueLock)
                 {
                     jobs = _jobQueue.ToList<IJobReference>();
                 }
 
-                lock (_jobLock)
+                lock(_jobLock)
                 {
                     jobs.AddRange(_runningJobs.Values.ToList<IJobReference>());
                 }
@@ -57,7 +57,7 @@ namespace TaskBucket
         {
             _logger?.LogInformation($"Adding new Job: {job.Identity} to TaskBucket");
 
-            lock (_queueLock)
+            lock(_queueLock)
             {
                 _jobQueue.Enqueue(job);
             }
@@ -80,36 +80,41 @@ namespace TaskBucket
 
             foreach(TValue value in values)
             {
-                references.Add(AddBackgroundJob(new Job<T, TValue>(value, action, OnJobComplete)));
+                references.Add(AddBackgroundJob(new Job<T, TValue>(action, value, OnJobComplete)));
             }
 
             return references;
         }
 
-        private void TryStartJob()
+        private void TryStartJob(int threadIndex = -1)
         {
             lock(_jobLock)
             {
-                if (_runningJobs.Count >= _options.Instances)
+                if(_runningJobs.Count >= _options.Instances)
                 {
                     return;
                 }
 
-                lock (_queueLock)
+                if(threadIndex == -1)
                 {
-                    if (!_jobQueue.TryDequeue(out IJob job))
+                    threadIndex = _runningJobs.Count;
+                }
+
+                lock(_queueLock)
+                {
+                    if(!_jobQueue.TryDequeue(out IJob job))
                     {
                         return;
                     }
 
                     _logger.LogInformation($"Starting Job: {job.Identity}");
 
-                    StartJobAsync(job);
+                    StartJobAsync(job, threadIndex);
                 }
             }
         }
 
-        private void StartJobAsync(IJob job)
+        private void StartJobAsync(IJob job, int threadIndex)
         {
             _runningJobs.Add(job.Identity, job);
 
@@ -119,11 +124,11 @@ namespace TaskBucket
                 {
                     IServiceScope scope = _services.CreateScope();
 
-                    await job.ExecuteAsync(scope.ServiceProvider);
+                    await job.ExecuteAsync(scope.ServiceProvider, threadIndex);
 
                     scope.Dispose();
                 }
-                catch (Exception e)
+                catch(Exception e)
                 {
                     throw e;
                 }
@@ -134,12 +139,12 @@ namespace TaskBucket
         {
             _logger?.LogInformation($"Job: {job.Identity} Completed");
 
-            lock (_jobLock)
+            lock(_jobLock)
             {
                 _runningJobs.Remove(job.Identity);
             }
 
-            TryStartJob();
+            TryStartJob(job.ThreadIndex);
         }
     }
 }
