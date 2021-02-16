@@ -14,7 +14,7 @@ namespace TaskBucket
 
         private readonly IBucketOptions _options;
 
-        private ILogger<ITaskBucket> _logger;
+        private readonly ILogger<ITaskBucket> _logger;
 
         //private readonly CancellationTokenSource _cancellationToken = new CancellationTokenSource();
 
@@ -24,13 +24,23 @@ namespace TaskBucket
 
         private readonly object _jobLock = new object();
 
+        private readonly object _queueLock = new object();
+
         public List<IJobReference> Tasks
         {
             get
             {
-                List<IJobReference> jobs = _jobQueue.ToList<IJobReference>();
+                List<IJobReference> jobs;
 
-                jobs.AddRange(_runningJobs.Values.ToList<IJobReference>());
+                lock (_queueLock)
+                {
+                    jobs = _jobQueue.ToList<IJobReference>();
+                }
+
+                lock (_jobLock)
+                {
+                    jobs.AddRange(_runningJobs.Values.ToList<IJobReference>());
+                }
 
                 return jobs;
             }
@@ -45,7 +55,12 @@ namespace TaskBucket
 
         public IJobReference AddBackgroundJob(IJob job)
         {
-            _jobQueue.Enqueue(job);
+            _logger?.LogInformation($"Adding new Job: {job.Identity} to TaskBucket");
+
+            lock (_queueLock)
+            {
+                _jobQueue.Enqueue(job);
+            }
 
             TryStartJob();
 
@@ -59,13 +74,13 @@ namespace TaskBucket
             return AddBackgroundJob(newJob);
         }
 
-        public List<IJobReference> AddBackgroundTasks<T, TValue>(IEnumerable<TValue> values, Func<T, TValue, Task> action)
+        public List<IJobReference> AddBackgroundJobs<T, TValue>(IEnumerable<TValue> values, Func<T, TValue, Task> action)
         {
             List<IJobReference> references = new List<IJobReference>();
 
             foreach(TValue value in values)
             {
-                references.Add(new Job<T, TValue>(value, action, OnJobComplete));
+                references.Add(AddBackgroundJob(new Job<T, TValue>(value, action, OnJobComplete)));
             }
 
             return references;
@@ -75,8 +90,20 @@ namespace TaskBucket
         {
             lock(_jobLock)
             {
-                if(_runningJobs.Count < _options.Instances && _jobQueue.TryDequeue(out IJob job))
+                if (_runningJobs.Count >= _options.Instances)
                 {
+                    return;
+                }
+
+                lock (_queueLock)
+                {
+                    if (!_jobQueue.TryDequeue(out IJob job))
+                    {
+                        return;
+                    }
+
+                    _logger.LogInformation($"Starting Job: {job.Identity}");
+
                     StartJobAsync(job);
                 }
             }
@@ -88,49 +115,31 @@ namespace TaskBucket
 
             Task.Factory.StartNew(async () =>
             {
-                IServiceScope scope = _services.CreateScope();
-                
-                await job.ExecuteAsync(scope.ServiceProvider);
-                
-                scope.Dispose();
+                try
+                {
+                    IServiceScope scope = _services.CreateScope();
+
+                    await job.ExecuteAsync(scope.ServiceProvider);
+
+                    scope.Dispose();
+                }
+                catch (Exception e)
+                {
+                    throw e;
+                }
             });
         }
 
         private void OnJobComplete(IJobReference job)
         {
-            _runningJobs.Remove(job.Identity);
+            _logger?.LogInformation($"Job: {job.Identity} Completed");
+
+            lock (_jobLock)
+            {
+                _runningJobs.Remove(job.Identity);
+            }
 
             TryStartJob();
         }
-
-        //#region IDisposable
-
-        //private bool _disposed;
-
-        //public void Dispose()
-        //{
-        //    Dispose(true);
-
-        //    GC.SuppressFinalize(this);
-        //}
-
-        //protected virtual void Dispose(bool disposing)
-        //{
-        //    if(_disposed)
-        //    {
-        //        return;
-        //    }
-
-        //    if(disposing)
-        //    {
-        //        _cancellationToken.Dispose();
-        //    }
-
-        //    _disposed = true;
-        //}
-
-        //#endregion
-
-
     }
 }

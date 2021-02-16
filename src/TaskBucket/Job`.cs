@@ -1,14 +1,18 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace TaskBucket
 {
+    [DebuggerDisplay("Source: {Source} | {Status} - {Identity}")]
     internal class Job<T>: IJob
     {
         private readonly Func<T, Task> _task;
 
         private readonly Action<IJobReference> _onJobFinished;
+
+        public string Source { get; }
 
         public Guid Identity { get; } = Guid.NewGuid();
 
@@ -20,6 +24,8 @@ namespace TaskBucket
         {
             _task = task;
             _onJobFinished = onJobFinished;
+
+            Source = typeof(T).Name;
         }
 
         public async Task ExecuteAsync(IServiceProvider services)
@@ -57,6 +63,7 @@ namespace TaskBucket
         }
     }
 
+    [DebuggerDisplay("Source: {Source} | {Status} - {Identity}")]
     internal class Job<T, TValue>: IJob
     {
         private readonly TValue _value;
@@ -64,6 +71,8 @@ namespace TaskBucket
         private readonly Func<T, TValue, Task> _task;
 
         private readonly Action<IJobReference> _onJobFinished;
+
+        public string Source { get; }
 
         public Guid Identity { get; } = Guid.NewGuid();
 
@@ -76,6 +85,8 @@ namespace TaskBucket
             _value = value;
             _task = task;
             _onJobFinished = onJobFinished;
+
+            Source = typeof(T).Name;
         }
 
         public async Task ExecuteAsync(IServiceProvider services)
