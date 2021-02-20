@@ -5,6 +5,6 @@
         /// <summary>
         /// How many task instances can be ran.
         /// </summary>
-        int Instances { get; set; }
+        int MaxBackgrounThreads { get; set; }
     }
 }

@@ -6,7 +6,11 @@ namespace TaskBucket
 {
     public interface ITaskBucket
     {
-        List<IJobReference> Tasks { get; }
+        IReadOnlyList<IJobReference> JobHistory { get; }
+
+        IReadOnlyList<IJobReference> Jobs { get; }
+
+        void ClearJobHistory();
 
         IJobReference AddBackgroundJob<T>(Func<T, Task> action);
         List<IJobReference> AddBackgroundJobs<T, TValue>(IEnumerable<TValue> values, Func<T, TValue, Task> action);

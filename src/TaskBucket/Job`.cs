@@ -12,6 +12,28 @@ namespace TaskBucket
 
         private readonly Action<IJobReference> _onJobFinished;
 
+        private DateTime _startTime = DateTime.MinValue;
+
+        private DateTime _endTime = DateTime.MinValue;
+
+        public TimeSpan ExecutionTime
+        {
+            get
+            {
+                if(_startTime == DateTime.MinValue)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                if(_endTime == DateTime.MinValue)
+                {
+                    return DateTime.Now - _startTime;
+                }
+
+                return _endTime - _startTime;
+            }
+        }
+
         public string Source { get; }
 
         public int ThreadIndex { get; private set; } = -1;
@@ -19,7 +41,6 @@ namespace TaskBucket
         public Guid Identity { get; } = Guid.NewGuid();
 
         public TaskStatus Status { get; private set; } = TaskStatus.Pending;
-
         public Exception Exception { get; private set; }
 
         public Job(Func<T, Task> task, Action<IJobReference> onJobFinished)
@@ -50,7 +71,11 @@ namespace TaskBucket
 
                 Status = TaskStatus.Running;
 
+                _startTime = DateTime.Now;
+
                 await _task.Invoke(instance);
+
+                _endTime = DateTime.Now;
 
                 Status = TaskStatus.Completed;
             }
@@ -65,6 +90,11 @@ namespace TaskBucket
                 _onJobFinished.Invoke(this);
             }
         }
+
+        public IJobReference GetJobReference()
+        {
+            return new JobReference(this);
+        }
     }
 
     [DebuggerDisplay("Source: {Source} | {Status} - {Identity}")]
@@ -76,6 +106,28 @@ namespace TaskBucket
 
         private readonly Action<IJobReference> _onJobFinished;
 
+        private DateTime _startTime = DateTime.MinValue;
+
+        private DateTime _endTime = DateTime.MinValue;
+
+        public TimeSpan ExecutionTime
+        {
+            get
+            {
+                if (_startTime == DateTime.MinValue)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                if (_endTime == DateTime.MinValue)
+                {
+                    return DateTime.Now - _startTime;
+                }
+
+                return _endTime - _startTime;
+            }
+        }
+
         public string Source { get; }
 
         public int ThreadIndex { get; private set; } = -1;
@@ -83,6 +135,7 @@ namespace TaskBucket
         public Guid Identity { get; } = Guid.NewGuid();
 
         public TaskStatus Status { get; private set; } = TaskStatus.Pending;
+
 
         public Exception Exception { get; private set; }
 
@@ -115,7 +168,11 @@ namespace TaskBucket
 
                 Status = TaskStatus.Running;
 
+                _startTime = DateTime.Now;
+
                 await _task.Invoke(instance, _value);
+
+                _endTime = DateTime.Now;
 
                 Status = TaskStatus.Completed;
             }
@@ -129,6 +186,11 @@ namespace TaskBucket
             {
                 _onJobFinished.Invoke(this);
             }
+        }
+
+        public IJobReference GetJobReference()
+        {
+            return new JobReference(this);
         }
     }
 }

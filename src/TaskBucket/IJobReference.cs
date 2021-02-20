@@ -12,6 +12,8 @@ namespace TaskBucket
 
         TaskStatus Status { get; }
 
+        TimeSpan ExecutionTime { get; }
+
         Exception Exception { get; }
     }
 }

@@ -26,7 +26,11 @@ namespace TaskBucket
 
         private readonly object _queueLock = new object();
 
-        public List<IJobReference> Tasks
+        private readonly List<IJobReference> _jobHistory = new List<IJobReference>();
+
+        public IReadOnlyList<IJobReference> JobHistory => _jobHistory;
+
+        public IReadOnlyList<IJobReference> Jobs
         {
             get
             {
@@ -67,6 +71,11 @@ namespace TaskBucket
             return job;
         }
 
+        public void ClearJobHistory()
+        {
+            _jobHistory.Clear();
+        }
+
         public IJobReference AddBackgroundJob<T>(Func<T, Task> action)
         {
             IJob newJob = new Job<T>(action, OnJobComplete);
@@ -90,7 +99,7 @@ namespace TaskBucket
         {
             lock(_jobLock)
             {
-                if(_runningJobs.Count >= _options.Instances)
+                if(_runningJobs.Count >= _options.MaxBackgrounThreads)
                 {
                     return;
                 }
@@ -107,7 +116,7 @@ namespace TaskBucket
                         return;
                     }
 
-                    _logger.LogInformation($"Starting Job: {job.Identity}");
+                    _logger.LogDebug($"Starting Job: {job.Identity}");
 
                     StartJobAsync(job, threadIndex);
                 }
@@ -120,31 +129,29 @@ namespace TaskBucket
 
             Task.Factory.StartNew(async () =>
             {
-                try
-                {
-                    IServiceScope scope = _services.CreateScope();
+                IServiceScope scope = _services.CreateScope();
 
-                    await job.ExecuteAsync(scope.ServiceProvider, threadIndex);
+                await job.ExecuteAsync(scope.ServiceProvider, threadIndex);
 
-                    scope.Dispose();
-                }
-                catch(Exception e)
-                {
-                    throw e;
-                }
+                scope.Dispose();
             });
         }
 
-        private void OnJobComplete(IJobReference job)
+        private void OnJobComplete(IJobReference jobReference)
         {
-            _logger?.LogInformation($"Job: {job.Identity} Completed");
+            _logger?.LogDebug($"Job: {jobReference.Identity} Completed");
 
             lock(_jobLock)
             {
-                _runningJobs.Remove(job.Identity);
+                _runningJobs.Remove(jobReference.Identity);
             }
 
-            TryStartJob(job.ThreadIndex);
+            if (jobReference is IJob job)
+            {
+                _jobHistory.Add(job.GetJobReference());
+            }
+
+            TryStartJob(jobReference.ThreadIndex);
         }
     }
 }
