@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using TaskBucket.Jobs;
 
 namespace TaskBucket
 {
@@ -28,7 +29,7 @@ namespace TaskBucket
                 Wait(job);
             }
         }
-        
+
         public static void WaitAll(List<IJobReference> jobs)
         {
             foreach(IJobReference job in jobs)
@@ -41,7 +42,7 @@ namespace TaskBucket
         {
             return Task.Factory.StartNew(() => WaitAll(jobs));
         }
-        
+
         public static Task WaitAllAsync(List<IJobReference> jobs)
         {
             return Task.Factory.StartNew(() => WaitAll(jobs));

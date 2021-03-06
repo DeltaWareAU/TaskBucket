@@ -12,10 +12,10 @@
     <Description>Hasle free asynchronous background tasks</Description>
     <PackageTags>Tasks; Background; Async; Asynchronous</PackageTags>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>1.0.0.9-prerelease</Version>
-    <PackageReleaseNotes>ADDED | ThreadIndex Tracking to Jobs.
+    <Version>1.0.0.10-prerelease</Version>
+    <PackageReleaseNotes>ADDED | Instanced Jobs
 
-CHANGED | BucketOptions to internal class.</PackageReleaseNotes>
+IMPROVED | Task tracking and monitoring</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

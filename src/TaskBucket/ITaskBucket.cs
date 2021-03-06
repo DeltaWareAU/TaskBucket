@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using TaskBucket.Jobs;
 
 namespace TaskBucket
 {
@@ -12,7 +13,8 @@ namespace TaskBucket
 
         void ClearJobHistory();
 
-        IJobReference AddBackgroundJob<T>(Func<T, Task> action);
-        List<IJobReference> AddBackgroundJobs<T, TValue>(IEnumerable<TValue> values, Func<T, TValue, Task> action);
+        IJobReference AddBackgroundJob<TInstance>(Func<TInstance, Task> action);
+        IJobReference AddBackgroundJob<TInstance>(TInstance instance, Func<TInstance, Task> action);
+        List<IJobReference> AddBackgroundJobs<TInstance, TValue>(IEnumerable<TValue> values, Func<TInstance, TValue, Task> action);
     }
 }

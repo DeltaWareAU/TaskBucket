@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TaskBucket
+namespace TaskBucket.Jobs
 {
     public interface IJobReference
     {
@@ -15,5 +15,7 @@ namespace TaskBucket
         TimeSpan ExecutionTime { get; }
 
         Exception Exception { get; }
+
+        IJobReference GetJobReference();
     }
 }

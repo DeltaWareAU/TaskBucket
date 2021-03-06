@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace TaskBucket
+namespace TaskBucket.Jobs
 {
-    internal interface IJob: IJobReference
+    public interface IServiceJob: IJobReference
     {
         Task ExecuteAsync(IServiceProvider services, int threadIndex);
-
-        IJobReference GetJobReference();
     }
 }
