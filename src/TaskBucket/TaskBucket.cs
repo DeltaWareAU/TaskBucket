@@ -18,8 +18,6 @@ namespace TaskBucket
 
         private readonly ILogger<ITaskBucket> _logger;
 
-        private readonly CancellationTokenSource _cancellationToken;
-
         private readonly ConcurrentQueue<IJobReference> _jobQueue = new ConcurrentQueue<IJobReference>();
 
         private readonly Dictionary<Guid, IJobReference> _runningJobs = new Dictionary<Guid, IJobReference>();
@@ -52,12 +50,11 @@ namespace TaskBucket
             }
         }
 
-        public TaskBucket(IBucketOptions options, IServiceProvider services = null, ILogger<ITaskBucket> logger = null, CancellationTokenSource cancellationToken = null)
+        public TaskBucket(IBucketOptions options, IServiceProvider services = null, ILogger<ITaskBucket> logger = null)
         {
             _options = options ?? throw new ArgumentNullException(nameof(services));
             _services = services;
             _logger = logger;
-            _cancellationToken = cancellationToken;
         }
 
         public IJobReference AddBackgroundJob(IJobReference job)
@@ -177,7 +174,7 @@ namespace TaskBucket
 
                     scope.Dispose();
                 }
-            }, _cancellationToken.Token);
+            });
         }
 
         private void OnJobComplete(IJobReference jobReference)
