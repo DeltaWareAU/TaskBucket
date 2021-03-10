@@ -8,7 +8,9 @@ namespace TaskBucket.Jobs
     [DebuggerDisplay("Source: {Source} | {Status} - {Identity}")]
     internal class Job<T>: JobReference, IServiceJob
     {
-        private readonly Func<T, Task> _task;
+        private readonly Func<T, Task> _task = null;
+
+        private readonly Func<T, IJobReference, Task> _referenceTask = null;
 
         private readonly Action<IJobReference> _onJobFinished;
 
@@ -19,6 +21,14 @@ namespace TaskBucket.Jobs
         public Job(Func<T, Task> task, Action<IJobReference> onJobFinished)
         {
             _task = task;
+            _onJobFinished = onJobFinished;
+
+            Source = typeof(T).Name;
+        }
+
+        public Job(Func<T, IJobReference, Task> task, Action<IJobReference> onJobFinished)
+        {
+            _referenceTask = task;
             _onJobFinished = onJobFinished;
 
             Source = typeof(T).Name;
@@ -46,7 +56,14 @@ namespace TaskBucket.Jobs
 
             try
             {
-                await _task.Invoke(instance);
+                if(_task == null)
+                {
+                    await _referenceTask.Invoke(instance, this);
+                }
+                else
+                {
+                    await _task.Invoke(instance);
+                }
 
                 _endTime = DateTime.Now;
 

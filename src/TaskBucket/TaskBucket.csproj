@@ -12,10 +12,8 @@
     <Description>Hasle free asynchronous background tasks</Description>
     <PackageTags>Tasks; Background; Async; Asynchronous</PackageTags>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>1.0.0.10-prerelease</Version>
-    <PackageReleaseNotes>ADDED | Instanced Jobs
-
-IMPROVED | Task tracking and monitoring</PackageReleaseNotes>
+    <Version>1.0.0.11-prerelease</Version>
+    <PackageReleaseNotes>ADDED | JobReference Feedback, this enables a job to receive infomration regarding its execution</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

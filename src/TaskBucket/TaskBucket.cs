@@ -86,6 +86,13 @@ namespace TaskBucket
             return AddBackgroundJob(newJob);
         }
 
+        public IJobReference AddBackgroundJob<TInstance>(Func<TInstance, IJobReference, Task> action)
+        {
+            IJobReference newJob = new Job<TInstance>(action, OnJobComplete);
+
+            return AddBackgroundJob(newJob);
+        }
+
         public IJobReference AddBackgroundJob<TInstance>(TInstance instance, Func<TInstance, Task> action)
         {
             IJobReference newJob = new InstanceJob<TInstance>(instance, action, OnJobComplete);
@@ -93,7 +100,26 @@ namespace TaskBucket
             return AddBackgroundJob(newJob);
         }
 
+        public IJobReference AddBackgroundJob<TInstance>(TInstance instance, Func<TInstance, IJobReference, Task> action)
+        {
+            IJobReference newJob = new InstanceJob<TInstance>(instance, action, OnJobComplete);
+
+            return AddBackgroundJob(newJob);
+        }
+
         public List<IJobReference> AddBackgroundJobs<TInstance, TValue>(IEnumerable<TValue> values, Func<TInstance, TValue, Task> action)
+        {
+            List<IJobReference> references = new List<IJobReference>();
+
+            foreach(TValue value in values)
+            {
+                references.Add(AddBackgroundJob(new ParameterJob<TInstance, TValue>(action, value, OnJobComplete)));
+            }
+
+            return references;
+        }
+
+        public List<IJobReference> AddBackgroundJobs<TInstance, TValue>(IEnumerable<TValue> values, Func<TInstance, TValue, IJobReference, Task> action)
         {
             List<IJobReference> references = new List<IJobReference>();
 

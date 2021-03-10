@@ -12,6 +12,8 @@ namespace TaskBucket.Jobs
 
         private readonly Func<T, TValue, Task> _task;
 
+        private readonly Func<T, TValue, IJobReference, Task> _referenceTask;
+
         private readonly Action<IJobReference> _onJobFinished;
 
         private DateTime _startTime = DateTime.MinValue;
@@ -21,6 +23,15 @@ namespace TaskBucket.Jobs
         public ParameterJob(Func<T, TValue, Task> task, TValue value, Action<IJobReference> onJobFinished)
         {
             _task = task;
+            _value = value;
+            _onJobFinished = onJobFinished;
+
+            Source = typeof(T).Name;
+        }
+
+        public ParameterJob(Func<T, TValue, IJobReference, Task> task, TValue value, Action<IJobReference> onJobFinished)
+        {
+            _referenceTask = task;
             _value = value;
             _onJobFinished = onJobFinished;
 
@@ -49,7 +60,14 @@ namespace TaskBucket.Jobs
 
             try
             {
-                await _task.Invoke(instance, _value);
+                if(_task == null)
+                {
+                    await _referenceTask.Invoke(instance, _value, this);
+                }
+                else
+                {
+                    await _task.Invoke(instance, _value);
+                }
 
                 _endTime = DateTime.Now;
 
@@ -60,7 +78,7 @@ namespace TaskBucket.Jobs
                 _endTime = DateTime.Now;
 
                 Status = TaskStatus.Failed;
-                
+
                 Exception = e;
             }
             finally

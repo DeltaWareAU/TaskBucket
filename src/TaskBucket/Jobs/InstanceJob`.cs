@@ -7,7 +7,9 @@ namespace TaskBucket.Jobs
     {
         private readonly TInstance _instance;
 
-        private readonly Func<TInstance, Task> _task;
+        private readonly Func<TInstance, Task> _task = null;
+
+        private readonly Func<TInstance, IJobReference, Task> _referenceTask = null;
 
         private readonly Action<IJobReference> _onJobFinished;
 
@@ -19,6 +21,15 @@ namespace TaskBucket.Jobs
         {
             _instance = instance;
             _task = task;
+            _onJobFinished = onJobFinished;
+
+            Source = typeof(TInstance).Name;
+        }
+
+        public InstanceJob(TInstance instance, Func<TInstance, IJobReference, Task> task, Action<IJobReference> onJobFinished)
+        {
+            _instance = instance;
+            _referenceTask = task;
             _onJobFinished = onJobFinished;
 
             Source = typeof(TInstance).Name;
@@ -39,7 +50,14 @@ namespace TaskBucket.Jobs
 
             try
             {
-                await _task.Invoke(_instance);
+                if(_task == null)
+                {
+                    await _referenceTask.Invoke(_instance, this);
+                }
+                else
+                {
+                    await _task.Invoke(_instance);
+                }
 
                 _endTime = DateTime.Now;
 
