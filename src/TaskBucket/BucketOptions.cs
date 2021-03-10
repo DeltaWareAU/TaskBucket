@@ -2,6 +2,6 @@
 {
     internal class BucketOptions: IBucketOptions
     {
-        public int MaxBackgrounThreads { get; set; } = 10;
+        public int MaxBackgroundThreads { get; set; } = 10;
     }
 }

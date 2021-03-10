@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 namespace TaskBucket.Jobs
 {
     [DebuggerDisplay("Source: {Source} | {Status} - {Identity}")]
-    internal class Job<T>: JobReference, IServiceJob
+    internal class Job<TService>: JobReference, IServiceJob
     {
-        private readonly Func<T, Task> _task = null;
+        private readonly Func<TService, Task> _task = null;
 
-        private readonly Func<T, IJobReference, Task> _referenceTask = null;
+        private readonly Func<TService, IJobReference, Task> _referenceTask = null;
 
         private readonly Action<IJobReference> _onJobFinished;
 
@@ -18,20 +18,20 @@ namespace TaskBucket.Jobs
 
         private DateTime _endTime = DateTime.MinValue;
 
-        public Job(Func<T, Task> task, Action<IJobReference> onJobFinished)
+        public Job(Func<TService, Task> task, Action<IJobReference> onJobFinished)
         {
             _task = task;
             _onJobFinished = onJobFinished;
 
-            Source = typeof(T).Name;
+            Source = typeof(TService).Name;
         }
 
-        public Job(Func<T, IJobReference, Task> task, Action<IJobReference> onJobFinished)
+        public Job(Func<TService, IJobReference, Task> task, Action<IJobReference> onJobFinished)
         {
             _referenceTask = task;
             _onJobFinished = onJobFinished;
 
-            Source = typeof(T).Name;
+            Source = typeof(TService).Name;
         }
 
         public async Task ExecuteAsync(IServiceProvider services, int threadIndex)
@@ -48,7 +48,7 @@ namespace TaskBucket.Jobs
                 throw new MethodAccessException();
             }
 
-            T instance = services.GetService<T>();
+            TService instance = services.GetService<TService>();
 
             Status = TaskStatus.Running;
 

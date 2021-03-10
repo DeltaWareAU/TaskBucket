@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 namespace TaskBucket.Jobs
 {
     [DebuggerDisplay("Source: {Source} | {Status} - {Identity}")]
-    internal class ParameterJob<T, TValue>: JobReference, IServiceJob
+    internal class ParameterJob<TService, TValue>: JobReference, IServiceJob
     {
         private readonly TValue _value;
 
-        private readonly Func<T, TValue, Task> _task;
+        private readonly Func<TService, TValue, Task> _task;
 
-        private readonly Func<T, TValue, IJobReference, Task> _referenceTask;
+        private readonly Func<TService, TValue, IJobReference, Task> _referenceTask;
 
         private readonly Action<IJobReference> _onJobFinished;
 
@@ -20,22 +20,22 @@ namespace TaskBucket.Jobs
 
         private DateTime _endTime = DateTime.MinValue;
 
-        public ParameterJob(Func<T, TValue, Task> task, TValue value, Action<IJobReference> onJobFinished)
+        public ParameterJob(Func<TService, TValue, Task> task, TValue value, Action<IJobReference> onJobFinished)
         {
             _task = task;
             _value = value;
             _onJobFinished = onJobFinished;
 
-            Source = typeof(T).Name;
+            Source = typeof(TService).Name;
         }
 
-        public ParameterJob(Func<T, TValue, IJobReference, Task> task, TValue value, Action<IJobReference> onJobFinished)
+        public ParameterJob(Func<TService, TValue, IJobReference, Task> task, TValue value, Action<IJobReference> onJobFinished)
         {
             _referenceTask = task;
             _value = value;
             _onJobFinished = onJobFinished;
 
-            Source = typeof(T).Name;
+            Source = typeof(TService).Name;
         }
 
         public async Task ExecuteAsync(IServiceProvider services, int threadIndex)
@@ -52,7 +52,7 @@ namespace TaskBucket.Jobs
                 throw new MethodAccessException();
             }
 
-            T instance = services.GetService<T>();
+            TService instance = services.GetService<TService>();
 
             Status = TaskStatus.Running;
 

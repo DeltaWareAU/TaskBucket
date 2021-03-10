@@ -135,7 +135,7 @@ namespace TaskBucket
         {
             lock(_jobLock)
             {
-                if(_runningJobs.Count >= _options.MaxBackgrounThreads)
+                if(_runningJobs.Count >= _options.MaxBackgroundThreads)
                 {
                     return;
                 }
