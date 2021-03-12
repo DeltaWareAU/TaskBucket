@@ -12,8 +12,15 @@
     <Description>Hasle free asynchronous background tasks</Description>
     <PackageTags>Tasks; Background; Async; Asynchronous</PackageTags>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>1.0.0.12-prerelease</Version>
-    <PackageReleaseNotes>ADDED | JobReference Feedback, this enables a job to receive infomration regarding its execution</PackageReleaseNotes>
+    <Version>1.0.0.13-prerelease</Version>
+    <PackageReleaseNotes>RENAMED | All References to Job to Task, this improves the symantics of the library.
+* AddBackgroundJob -&gt; AddBackgroundTask
+* IJobReference -&gt; ITaskReference
+
+ADDED | Documentation to most public methods and properties. This should help in usage
+
+REWORKED | How options work
+REWORKED | How TaskHistory is kept</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

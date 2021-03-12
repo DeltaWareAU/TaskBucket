@@ -13,26 +13,18 @@ namespace TaskBucket.Tasks
 
         private readonly Action<ITaskReference> _onJobFinished;
 
-        private DateTime _startTime = DateTime.MinValue;
-
-        private DateTime _endTime = DateTime.MinValue;
-
-        public InstanceTask(TInstance instance, Func<TInstance, Task> task, Action<ITaskReference> onJobFinished)
+        public InstanceTask(TInstance instance, Func<TInstance, Task> task, Action<ITaskReference> onJobFinished) : base(typeof(TInstance).Name)
         {
             _instance = instance;
             _task = task;
             _onJobFinished = onJobFinished;
-
-            Source = typeof(TInstance).Name;
         }
 
-        public InstanceTask(TInstance instance, Func<TInstance, ITaskReference, Task> task, Action<ITaskReference> onJobFinished)
+        public InstanceTask(TInstance instance, Func<TInstance, ITaskReference, Task> task, Action<ITaskReference> onJobFinished) : base(typeof(TInstance).Name)
         {
             _instance = instance;
             _referenceTask = task;
             _onJobFinished = onJobFinished;
-
-            Source = typeof(TInstance).Name;
         }
 
         public async Task ExecuteAsync(int threadIndex)
@@ -46,7 +38,7 @@ namespace TaskBucket.Tasks
 
             Status = TaskStatus.Running;
 
-            _startTime = DateTime.Now;
+            StartDate = DateTime.Now;
 
             try
             {
@@ -59,13 +51,13 @@ namespace TaskBucket.Tasks
                     await _task.Invoke(_instance);
                 }
 
-                _endTime = DateTime.Now;
+                EndDate = DateTime.Now;
 
                 Status = TaskStatus.Completed;
             }
             catch(Exception e)
             {
-                _endTime = DateTime.Now;
+                EndDate = DateTime.Now;
 
                 Status = TaskStatus.Failed;
 

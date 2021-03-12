@@ -1,6 +1,6 @@
 ﻿namespace TaskBucket.Options
 {
-    interface IBucketOptions
+    internal interface IBucketOptions
     {
         bool JobHistoryEnabled { get; }
 

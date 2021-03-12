@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using TaskBucket.Tasks;
+using TaskStatus = TaskBucket.Tasks.TaskStatus;
 
 namespace TaskBucket
 {

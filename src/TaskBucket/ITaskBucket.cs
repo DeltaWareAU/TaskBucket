@@ -5,7 +5,7 @@ using TaskBucket.Tasks;
 
 namespace TaskBucket
 {
-    public interface ITaskBucket
+    public interface ITaskBucket: ITaskBucketStatus
     {
         /// <summary>
         /// Adds a new background tasks to the queue

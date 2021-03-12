@@ -11,7 +11,7 @@ using TaskBucket.Tasks;
 
 namespace TaskBucket
 {
-    internal class TaskBucket: ITaskBucket, ITaskBucketStatus
+    internal class TaskBucket: ITaskBucket
     {
         private readonly IServiceProvider _services;
 

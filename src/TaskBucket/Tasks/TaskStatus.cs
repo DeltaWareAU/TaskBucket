@@ -1,4 +1,4 @@
-﻿namespace TaskBucket
+﻿namespace TaskBucket.Tasks
 {
     public enum TaskStatus
     {

@@ -16,26 +16,18 @@ namespace TaskBucket.Tasks
 
         private readonly Action<IServiceTask> _onJobFinished;
 
-        private DateTime _startTime = DateTime.MinValue;
-
-        private DateTime _endTime = DateTime.MinValue;
-
-        public ParameterTask(Func<TService, TValue, Task> task, TValue parameter, Action<IServiceTask> onJobFinished)
+        public ParameterTask(Func<TService, TValue, Task> task, TValue parameter, Action<IServiceTask> onJobFinished) : base(typeof(TService).Name)
         {
             _task = task;
             _parameter = parameter;
             _onJobFinished = onJobFinished;
-
-            Source = typeof(TService).Name;
         }
 
-        public ParameterTask(Func<TService, TValue, IServiceTask, Task> task, TValue parameter, Action<IServiceTask> onJobFinished)
+        public ParameterTask(Func<TService, TValue, IServiceTask, Task> task, TValue parameter, Action<IServiceTask> onJobFinished) : base(typeof(TService).Name)
         {
             _referenceTask = task;
             _parameter = parameter;
             _onJobFinished = onJobFinished;
-
-            Source = typeof(TService).Name;
         }
 
         public async Task ExecuteAsync(IServiceProvider services, int threadIndex)
@@ -56,7 +48,7 @@ namespace TaskBucket.Tasks
 
             Status = TaskStatus.Running;
 
-            _startTime = DateTime.Now;
+            StartDate = DateTime.Now;
 
             try
             {
@@ -69,13 +61,13 @@ namespace TaskBucket.Tasks
                     await _task.Invoke(instance, _parameter);
                 }
 
-                _endTime = DateTime.Now;
+                EndDate = DateTime.Now;
 
                 Status = TaskStatus.Completed;
             }
             catch(Exception e)
             {
-                _endTime = DateTime.Now;
+                EndDate = DateTime.Now;
 
                 Status = TaskStatus.Failed;
 

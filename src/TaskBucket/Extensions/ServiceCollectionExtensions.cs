@@ -7,6 +7,10 @@ namespace TaskBucket
 {
     public static class ServiceCollectionExtensions
     {
+        /// <summary>
+        /// Adds Task Bucket to Dependency Injection
+        /// </summary>
+        /// <param name="optionsFactory">Used to configure Task Bucket</param>
         public static void AddTaskBucket(this IServiceCollection services, Action<IBucketOptionsBuilder> optionsFactory = null)
         {
             if(services == null)
