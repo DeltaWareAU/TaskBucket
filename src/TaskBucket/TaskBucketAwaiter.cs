@@ -1,51 +1,81 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using TaskBucket.Jobs;
+using TaskBucket.Tasks;
 
 namespace TaskBucket
 {
+    /// <summary>
+    /// Contains methods used for awaiting tasks both Synchronously and Asynchronously.
+    /// </summary>
     public static class TaskBucketAwaiter
     {
-        private const int _pollRateMs = 50;
+        /// <summary>
+        /// Specifies how often in milliseconds a tasks status will be checked.
+        /// </summary>
+        private const int PollRateMs = 50;
 
-        public static void Wait(IJobReference job)
+        /// <summary>
+        /// Locks the current thread until the task has completed.
+        /// </summary>
+        /// <param name="task">The task to be waited for</param>
+        public static void Wait(ITaskReference task)
         {
-            while(job.Status == TaskStatus.Pending || job.Status == TaskStatus.Running)
+            while(task.Status == TaskStatus.Pending || task.Status == TaskStatus.Running)
             {
-                Thread.Sleep(_pollRateMs);
+                Thread.Sleep(PollRateMs);
             }
         }
 
-        public static Task WaitAsync(IJobReference job)
+        /// <summary>
+        /// Locks the current thread until the tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to be waited for</param>
+        public static void WaitAll(params ITaskReference[] tasks)
         {
-            return Task.Factory.StartNew(() => Wait(job));
-        }
-
-        public static void WaitAll(params IJobReference[] jobs)
-        {
-            foreach(IJobReference job in jobs)
+            foreach(ITaskReference task in tasks)
             {
-                Wait(job);
+                Wait(task);
             }
         }
 
-        public static void WaitAll(List<IJobReference> jobs)
+        /// <summary>
+        /// Locks the current thread until the tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to be waited for</param>
+        public static void WaitAll(List<ITaskReference> tasks)
         {
-            foreach(IJobReference job in jobs)
+            foreach(ITaskReference task in tasks)
             {
-                Wait(job);
+                Wait(task);
             }
         }
 
-        public static Task WaitAllAsync(params IJobReference[] jobs)
+        /// <summary>
+        /// Holds the current thread until the task has completed.
+        /// </summary>
+        /// <param name="task">The task to be waited for</param>
+        public static Task WaitAsync(ITaskReference task)
         {
-            return Task.Factory.StartNew(() => WaitAll(jobs));
+            return Task.Factory.StartNew(() => Wait(task));
         }
 
-        public static Task WaitAllAsync(List<IJobReference> jobs)
+        /// <summary>
+        /// Holds the current thread until the tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to be waited for</param>
+        public static Task WaitAllAsync(params ITaskReference[] tasks)
         {
-            return Task.Factory.StartNew(() => WaitAll(jobs));
+            return Task.Factory.StartNew(() => WaitAll(tasks));
+        }
+
+        /// <summary>
+        /// Holds the current thread until the tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to be waited for</param>
+        public static Task WaitAllAsync(List<ITaskReference> tasks)
+        {
+            return Task.Factory.StartNew(() => WaitAll(tasks));
         }
     }
 }

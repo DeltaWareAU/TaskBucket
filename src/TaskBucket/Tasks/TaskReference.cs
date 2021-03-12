@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace TaskBucket.Jobs
+namespace TaskBucket.Tasks
 {
-    public class JobReference: IJobReference
+    internal class TaskReference: ITaskReference
     {
         public string Source { get; protected set; }
         public int ThreadIndex { get; protected set; }
@@ -11,7 +11,7 @@ namespace TaskBucket.Jobs
         public TimeSpan ExecutionTime { get; protected set; }
         public Exception Exception { get; protected set; }
 
-        public IJobReference GetJobReference()
+        public ITaskReference GetTaskReference()
         {
             return this;
         }

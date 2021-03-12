@@ -1,23 +1,23 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace TaskBucket.Jobs
+namespace TaskBucket.Tasks
 {
-    public class InstanceJob<TInstance>: JobReference, IJob
+    internal class InstanceTask<TInstance>: TaskReference, IInstanceTask
     {
         private readonly TInstance _instance;
 
         private readonly Func<TInstance, Task> _task = null;
 
-        private readonly Func<TInstance, IJobReference, Task> _referenceTask = null;
+        private readonly Func<TInstance, ITaskReference, Task> _referenceTask = null;
 
-        private readonly Action<IJobReference> _onJobFinished;
+        private readonly Action<ITaskReference> _onJobFinished;
 
         private DateTime _startTime = DateTime.MinValue;
 
         private DateTime _endTime = DateTime.MinValue;
 
-        public InstanceJob(TInstance instance, Func<TInstance, Task> task, Action<IJobReference> onJobFinished)
+        public InstanceTask(TInstance instance, Func<TInstance, Task> task, Action<ITaskReference> onJobFinished)
         {
             _instance = instance;
             _task = task;
@@ -26,7 +26,7 @@ namespace TaskBucket.Jobs
             Source = typeof(TInstance).Name;
         }
 
-        public InstanceJob(TInstance instance, Func<TInstance, IJobReference, Task> task, Action<IJobReference> onJobFinished)
+        public InstanceTask(TInstance instance, Func<TInstance, ITaskReference, Task> task, Action<ITaskReference> onJobFinished)
         {
             _instance = instance;
             _referenceTask = task;

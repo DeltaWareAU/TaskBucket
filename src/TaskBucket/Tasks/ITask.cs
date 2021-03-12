@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace TaskBucket.Jobs
+namespace TaskBucket.Tasks
 {
-    internal interface IJob: IJobReference
+    internal interface IInstanceTask: ITaskReference
     {
         Task ExecuteAsync(int threadIndex);
     }

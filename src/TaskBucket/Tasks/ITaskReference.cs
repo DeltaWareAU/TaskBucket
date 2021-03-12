@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace TaskBucket.Jobs
+namespace TaskBucket.Tasks
 {
-    public interface IJobReference
+    public interface ITaskReference
     {
         string Source { get; }
 
@@ -16,6 +16,6 @@ namespace TaskBucket.Jobs
 
         Exception Exception { get; }
 
-        IJobReference GetJobReference();
+        ITaskReference GetTaskReference();
     }
 }

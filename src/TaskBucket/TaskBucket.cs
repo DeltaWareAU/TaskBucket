@@ -1,16 +1,17 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using DeltaWare.SDK.Common.Collections.RecyclingQueue;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using TaskBucket.Jobs;
+using TaskBucket.Options;
+using TaskBucket.Tasks;
 
 namespace TaskBucket
 {
-    internal class TaskBucket: ITaskBucket
+    internal class TaskBucket: ITaskBucket, ITaskBucketStatus
     {
         private readonly IServiceProvider _services;
 
@@ -18,35 +19,37 @@ namespace TaskBucket
 
         private readonly ILogger<ITaskBucket> _logger;
 
-        private readonly ConcurrentQueue<IJobReference> _jobQueue = new ConcurrentQueue<IJobReference>();
+        private readonly ConcurrentQueue<ITaskReference> _taskQueue = new ConcurrentQueue<ITaskReference>();
 
-        private readonly Dictionary<Guid, IJobReference> _runningJobs = new Dictionary<Guid, IJobReference>();
+        private readonly Dictionary<Guid, ITaskReference> _runningTasks = new Dictionary<Guid, ITaskReference>();
 
-        private readonly List<IJobReference> _jobHistory = new List<IJobReference>();
+        private readonly ConcurrentRecyclingQueue<ITaskReference> _taskHistory;
 
-        private readonly object _jobLock = new object();
+        private readonly object _taskLock = new object();
 
         private readonly object _queueLock = new object();
 
-        public IReadOnlyList<IJobReference> JobHistory => _jobHistory;
+        public IReadOnlyList<ITaskReference> TaskHistory => _taskHistory.ToList();
 
-        public IReadOnlyList<IJobReference> Jobs
+        public IReadOnlyList<ITaskReference> PendingTasks
         {
             get
             {
-                List<IJobReference> jobs;
-
                 lock(_queueLock)
                 {
-                    jobs = _jobQueue.ToList();
+                    return _taskQueue.ToList();
                 }
+            }
+        }
 
-                lock(_jobLock)
+        public IReadOnlyList<ITaskReference> RunningTasks
+        {
+            get
+            {
+                lock(_taskLock)
                 {
-                    jobs.AddRange(_runningJobs.Values.ToList());
+                    return _runningTasks.Values.ToList();
                 }
-
-                return jobs;
             }
         }
 
@@ -55,140 +58,157 @@ namespace TaskBucket
             _options = options ?? throw new ArgumentNullException(nameof(services));
             _services = services;
             _logger = logger;
+
+            _taskHistory = new ConcurrentRecyclingQueue<ITaskReference>(_options.JobHistoryDepth);
         }
 
-        public IJobReference AddBackgroundJob(IJobReference job)
+        public ITaskReference AddBackgroundTask(ITaskReference serviceTask)
         {
-            _logger?.LogInformation($"Adding new Job: {job.Identity} to TaskBucket");
+            _logger?.LogInformation($"Adding new ServiceTask: {serviceTask.Identity} to TaskBucket");
 
             lock(_queueLock)
             {
-                _jobQueue.Enqueue(job);
+                _taskQueue.Enqueue(serviceTask);
             }
 
             TryStartJob();
 
-            return job;
+            return serviceTask;
         }
 
-        public void ClearJobHistory()
+        public void ClearTaskHistory()
         {
-            _jobHistory.Clear();
+            _taskHistory.Clear();
         }
 
-        public IJobReference AddBackgroundJob<TInstance>(Func<TInstance, Task> action)
+        public ITaskReference AddBackgroundTask<TDefinition>(Func<TDefinition, Task> action)
         {
-            IJobReference newJob = new Job<TInstance>(action, OnJobComplete);
+            IServiceTask newTask = new ServiceTask<TDefinition>(action, OnJobComplete);
 
-            return AddBackgroundJob(newJob);
+            return AddBackgroundTask(newTask);
         }
 
-        public IJobReference AddBackgroundJob<TInstance>(Func<TInstance, IJobReference, Task> action)
+        public ITaskReference AddBackgroundTask<TDefinition>(Func<TDefinition, ITaskReference, Task> action)
         {
-            IJobReference newJob = new Job<TInstance>(action, OnJobComplete);
+            IServiceTask newTask = new ServiceTask<TDefinition>(action, OnJobComplete);
 
-            return AddBackgroundJob(newJob);
+            return AddBackgroundTask(newTask);
         }
 
-        public IJobReference AddBackgroundJob<TInstance>(TInstance instance, Func<TInstance, Task> action)
+        public ITaskReference AddBackgroundTask<TDefinition>(TDefinition instance, Func<TDefinition, Task> action)
         {
-            IJobReference newJob = new InstanceJob<TInstance>(instance, action, OnJobComplete);
+            IInstanceTask newTask = new InstanceTask<TDefinition>(instance, action, OnJobComplete);
 
-            return AddBackgroundJob(newJob);
+            return AddBackgroundTask(newTask);
         }
 
-        public IJobReference AddBackgroundJob<TInstance>(TInstance instance, Func<TInstance, IJobReference, Task> action)
+        public ITaskReference AddBackgroundTask<TDefinition>(TDefinition instance, Func<TDefinition, ITaskReference, Task> action)
         {
-            IJobReference newJob = new InstanceJob<TInstance>(instance, action, OnJobComplete);
+            IInstanceTask newTask = new InstanceTask<TDefinition>(instance, action, OnJobComplete);
 
-            return AddBackgroundJob(newJob);
+            return AddBackgroundTask(newTask);
         }
 
-        public List<IJobReference> AddBackgroundJobs<TInstance, TValue>(IEnumerable<TValue> values, Func<TInstance, TValue, Task> action)
+        public List<ITaskReference> AddBackgroundTasks<TDefinition, TParameter>(IEnumerable<TParameter> parameters, Func<TDefinition, TParameter, Task> action)
         {
-            List<IJobReference> references = new List<IJobReference>();
+            List<ITaskReference> references = new List<ITaskReference>();
 
-            foreach(TValue value in values)
+            foreach(TParameter parameter in parameters)
             {
-                references.Add(AddBackgroundJob(new ParameterJob<TInstance, TValue>(action, value, OnJobComplete)));
+                references.Add(AddBackgroundTask(new ParameterTask<TDefinition, TParameter>(action, parameter, OnJobComplete)));
             }
 
             return references;
         }
 
-        public List<IJobReference> AddBackgroundJobs<TInstance, TValue>(IEnumerable<TValue> values, Func<TInstance, TValue, IJobReference, Task> action)
+        public List<ITaskReference> AddBackgroundTasks<TDefinition, TParameter>(IEnumerable<TParameter> parameters, Func<TDefinition, TParameter, ITaskReference, Task> action)
         {
-            List<IJobReference> references = new List<IJobReference>();
+            List<ITaskReference> taskReferences = new List<ITaskReference>();
 
-            foreach(TValue value in values)
+            foreach(TParameter parameter in parameters)
             {
-                references.Add(AddBackgroundJob(new ParameterJob<TInstance, TValue>(action, value, OnJobComplete)));
+                taskReferences.Add(AddBackgroundTask(new ParameterTask<TDefinition, TParameter>(action, parameter, OnJobComplete)));
             }
 
-            return references;
+            return taskReferences;
         }
 
         private void TryStartJob(int threadIndex = -1)
         {
-            lock(_jobLock)
+            lock(_taskLock)
             {
-                if(_runningJobs.Count >= _options.MaxBackgroundThreads)
+                if(_runningTasks.Count >= _options.MaxBackgroundThreads)
                 {
                     return;
                 }
 
                 if(threadIndex == -1)
                 {
-                    threadIndex = _runningJobs.Count;
+                    threadIndex = _runningTasks.Count;
                 }
 
                 lock(_queueLock)
                 {
-                    if(!_jobQueue.TryDequeue(out IJobReference job))
+                    if(!_taskQueue.TryDequeue(out ITaskReference taskReference))
                     {
                         return;
                     }
 
-                    _logger.LogDebug($"Starting Job: {job.Identity}");
+                    _logger.LogDebug($"Starting ServiceTask: {taskReference.Identity}");
 
-                    StartJobAsync(job, threadIndex);
+                    StartJobAsync(taskReference, threadIndex);
                 }
             }
         }
 
-        private Task StartJobAsync(IJobReference jobReference, int threadIndex)
+        private Task StartJobAsync(ITaskReference taskReference, int threadIndex)
         {
-            _runningJobs.Add(jobReference.Identity, jobReference);
+            _runningTasks.Add(taskReference.Identity, taskReference);
 
             return Task.Factory.StartNew(async () =>
             {
-                if(jobReference is IJob job)
+                switch(taskReference)
                 {
-                    await job.ExecuteAsync(threadIndex);
-                }
-                else if(jobReference is IServiceJob serviceJob)
-                {
-                    IServiceScope scope = _services.CreateScope();
-
-                    await serviceJob.ExecuteAsync(scope.ServiceProvider, threadIndex);
-
-                    scope.Dispose();
+                    case IInstanceTask task:
+                    await ExecuteInstanceTask(task, threadIndex);
+                    break;
+                    case IServiceTask task:
+                    await ExecuteServiceTask(task, threadIndex);
+                    break;
                 }
             });
         }
 
-        private void OnJobComplete(IJobReference jobReference)
+        private void OnJobComplete(ITaskReference serviceTask)
         {
-            _logger?.LogDebug($"Job: {jobReference.Identity} Completed");
+            _logger?.LogDebug($"ServiceTask: {serviceTask.Identity} Completed");
 
-            lock(_jobLock)
+            lock(_taskLock)
             {
-                _runningJobs.Remove(jobReference.Identity);
+                _runningTasks.Remove(serviceTask.Identity);
             }
 
-            _jobHistory.Add(jobReference.GetJobReference());
+            if(_options.JobHistoryEnabled)
+            {
+                _taskHistory.Add(serviceTask.GetTaskReference());
+            }
 
-            TryStartJob(jobReference.ThreadIndex);
+
+            TryStartJob(serviceTask.ThreadIndex);
+        }
+
+        private async Task ExecuteInstanceTask(IInstanceTask task, int threadIndex)
+        {
+            await task.ExecuteAsync(threadIndex);
+        }
+
+        private async Task ExecuteServiceTask(IServiceTask task, int threadIndex)
+        {
+            IServiceScope scope = _services.CreateScope();
+
+            await task.ExecuteAsync(scope.ServiceProvider, threadIndex);
+
+            scope.Dispose();
         }
     }
 }

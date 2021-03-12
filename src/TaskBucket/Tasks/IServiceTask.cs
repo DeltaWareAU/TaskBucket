@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace TaskBucket.Jobs
+namespace TaskBucket.Tasks
 {
-    public interface IServiceJob: IJobReference
+    public interface IServiceTask: ITaskReference
     {
         Task ExecuteAsync(IServiceProvider services, int threadIndex);
     }

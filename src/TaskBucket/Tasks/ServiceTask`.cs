@@ -3,36 +3,32 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace TaskBucket.Jobs
+namespace TaskBucket.Tasks
 {
     [DebuggerDisplay("Source: {Source} | {Status} - {Identity}")]
-    internal class ParameterJob<TService, TValue>: JobReference, IServiceJob
+    internal class ServiceTask<TService>: TaskReference, IServiceTask
     {
-        private readonly TValue _value;
+        private readonly Func<TService, Task> _task = null;
 
-        private readonly Func<TService, TValue, Task> _task;
+        private readonly Func<TService, ITaskReference, Task> _referenceTask = null;
 
-        private readonly Func<TService, TValue, IJobReference, Task> _referenceTask;
-
-        private readonly Action<IJobReference> _onJobFinished;
+        private readonly Action<ITaskReference> _onJobFinished;
 
         private DateTime _startTime = DateTime.MinValue;
 
         private DateTime _endTime = DateTime.MinValue;
 
-        public ParameterJob(Func<TService, TValue, Task> task, TValue value, Action<IJobReference> onJobFinished)
+        public ServiceTask(Func<TService, Task> task, Action<ITaskReference> onJobFinished)
         {
             _task = task;
-            _value = value;
             _onJobFinished = onJobFinished;
 
             Source = typeof(TService).Name;
         }
 
-        public ParameterJob(Func<TService, TValue, IJobReference, Task> task, TValue value, Action<IJobReference> onJobFinished)
+        public ServiceTask(Func<TService, ITaskReference, Task> task, Action<ITaskReference> onJobFinished)
         {
             _referenceTask = task;
-            _value = value;
             _onJobFinished = onJobFinished;
 
             Source = typeof(TService).Name;
@@ -62,11 +58,11 @@ namespace TaskBucket.Jobs
             {
                 if(_task == null)
                 {
-                    await _referenceTask.Invoke(instance, _value, this);
+                    await _referenceTask.Invoke(instance, this);
                 }
                 else
                 {
-                    await _task.Invoke(instance, _value);
+                    await _task.Invoke(instance);
                 }
 
                 _endTime = DateTime.Now;
