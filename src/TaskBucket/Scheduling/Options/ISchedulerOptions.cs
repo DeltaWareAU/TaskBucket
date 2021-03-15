@@ -1,7 +1,9 @@
-﻿namespace TaskBucket.Scheduling.Options
+﻿using System;
+
+namespace TaskBucket.Scheduling.Options
 {
     internal interface ISchedulerOptions
     {
-        int MaxConcurrentThreads { get; }
+        TimeZoneInfo TimeZone { get; }
     }
 }

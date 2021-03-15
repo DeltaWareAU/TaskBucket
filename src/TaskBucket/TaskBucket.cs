@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TaskBucket.Options;
-using TaskBucket.Scheduling.Scheduler;
+using TaskBucket.Pooling;
 using TaskBucket.Tasks;
 using TaskBucket.Tasks.Options;
 
@@ -15,22 +15,27 @@ namespace TaskBucket
 
         private readonly IBucketOptions _options;
 
-        private readonly IScheduler _scheduler;
+        private readonly ITaskPool _scheduler;
 
-        public TaskBucket(IBucketOptions options, IScheduler scheduler, ILogger<ITaskBucket> logger)
+        public TaskBucket(IBucketOptions options, ITaskPool taskPool, ILogger<ITaskBucket> logger)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
-            _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
+            _scheduler = taskPool ?? throw new ArgumentNullException(nameof(taskPool));
             _logger = logger;
+        }
+
+        public ITaskReference AddBackgroundTask<TInvokable>(Action<ITaskOptionsBuilder> optionsFactory = null) where TInvokable : IInvokableTask
+        {
+            return AddBackgroundTask<TInvokable>(async t => await t.InvokeAsync(), optionsFactory);
         }
 
         public ITaskReference AddBackgroundTask<TDefinition>(Func<TDefinition, Task> action, Action<ITaskOptionsBuilder> optionsFactory = null)
         {
             ITaskOptions options = BuildTaskOptions(optionsFactory);
 
-            ITask newTask = new Tasks.Task<TDefinition>(action, options);
+            ITask newTask = new ServiceTask<TDefinition>(action, options);
 
-            _scheduler.ScheduleTask(newTask);
+            _scheduler.EnqueueTask(newTask);
 
             return newTask;
         }
@@ -39,9 +44,9 @@ namespace TaskBucket
         {
             ITaskOptions options = BuildTaskOptions(optionsFactory);
 
-            ITask newTask = new Tasks.Task<TDefinition>(action, options);
+            ITask newTask = new ServiceTask<TDefinition>(action, options);
 
-            _scheduler.ScheduleTask(newTask);
+            _scheduler.EnqueueTask(newTask);
 
             return newTask;
         }
@@ -56,7 +61,7 @@ namespace TaskBucket
             {
                 ITask newTask = new ParameterTask<TDefinition, TParameter>(action, parameter, options);
 
-                _scheduler.ScheduleTask(newTask);
+                _scheduler.EnqueueTask(newTask);
 
                 references.Add(newTask);
             }
@@ -74,7 +79,7 @@ namespace TaskBucket
             {
                 ITask newTask = new ParameterTask<TDefinition, TParameter>(action, parameter, options);
 
-                _scheduler.ScheduleTask(newTask);
+                _scheduler.EnqueueTask(newTask);
 
                 references.Add(newTask);
             }

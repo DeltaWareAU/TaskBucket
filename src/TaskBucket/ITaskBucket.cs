@@ -8,6 +8,7 @@ namespace TaskBucket
 {
     public interface ITaskBucket
     {
+        ITaskReference AddBackgroundTask<TInvokable>(Action<ITaskOptionsBuilder> optionsFactory = null) where TInvokable : IInvokableTask;
         /// <summary>
         /// Adds a new background tasks to the queue
         /// </summary>

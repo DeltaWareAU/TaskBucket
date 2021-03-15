@@ -9,18 +9,18 @@ using TaskStatus = TaskBucket.Tasks.Enums.TaskStatus;
 namespace TaskBucket.Tasks
 {
     [DebuggerDisplay("Source: {Source} | {Status} - {Identity}")]
-    internal class Task<TService>: TaskReference, ITask
+    internal class ServiceTask<TService>: TaskReference, ITask
     {
         private readonly Func<TService, Task> _task = null;
 
         private readonly Func<TService, ITaskReference, Task> _referenceTask = null;
 
-        public Task(Func<TService, Task> task, ITaskOptions options) : base(typeof(TService).Name, options)
+        public ServiceTask(Func<TService, Task> task, ITaskOptions options) : base(typeof(TService).Name, options)
         {
             _task = task;
         }
 
-        public Task(Func<TService, ITaskReference, Task> task, ITaskOptions options) : base(typeof(TService).Name, options)
+        public ServiceTask(Func<TService, ITaskReference, Task> task, ITaskOptions options) : base(typeof(TService).Name, options)
         {
             _referenceTask = task;
         }

@@ -1,16 +1,10 @@
-﻿using System;
-using TaskBucket.Tasks.Enums;
+﻿using TaskBucket.Tasks.Enums;
 
 namespace TaskBucket.Tasks.Options
 {
     internal class TaskOptionsBuilder: ITaskOptionsBuilder
     {
         public TaskPriority Priority { get; set; }
-
-        public void AsReoccurringTask(TimeSpan interval)
-        {
-            throw new NotImplementedException();
-        }
 
         public ITaskOptions BuildOptions()
         {

@@ -1,12 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using TaskBucket.Pooling;
 using TaskBucket.Scheduling.Options;
 using TaskBucket.Tasks;
-using TaskStatus = TaskBucket.Tasks.Enums.TaskStatus;
 
 namespace TaskBucket.Scheduling.Scheduler
 {
@@ -14,115 +12,64 @@ namespace TaskBucket.Scheduling.Scheduler
     {
         private readonly ILogger _logger;
 
-        private readonly IServiceProvider _services;
+        private readonly ITaskPool _taskPool;
 
         private readonly ISchedulerOptions _options;
 
-        private readonly CancellationTokenSource _cancellationSource = new CancellationTokenSource();
+        private readonly SortedList<DateTime, List<ITask>> _taskSchedule = new SortedList<DateTime, List<ITask>>();
 
-        private readonly object _taskLock = new object();
-
-        private readonly ConcurrentTaskQueue _taskQueue = new ConcurrentTaskQueue();
-
-        private readonly ITask[] _taskThreads;
-
-        public bool IsRunning => _taskThreads.Any(i => i != null);
-
-        public bool Enabled { get; set; }
-
-        public Scheduler(ISchedulerOptions options, IServiceProvider services, ILogger<IScheduler> logger)
+        public Scheduler(ISchedulerOptions options, ITaskPool taskPool, ILogger<IScheduler> logger)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
-            _services = services ?? throw new ArgumentNullException(nameof(services));
+            _taskPool = taskPool ?? throw new ArgumentNullException(nameof(taskPool));
 
             _logger = logger;
-
-            _taskThreads = new ITask[_options.MaxConcurrentThreads];
         }
 
         public void ScheduleTask(ITask task)
         {
-            _logger?.LogInformation($"Adding new Task:{task.Identity}");
+            DateTime? nextRun = task.Options.Scheduler.GetNextSchedule(DateTime.UtcNow, _options.TimeZone);
 
-            _taskQueue.Enqueue(task);
-        }
-
-        public void CancelAllCancellableTasks()
-        {
-            if(_cancellationSource.IsCancellationRequested)
+            if(nextRun == null)
             {
+                // A null next run date means we won't be running the task again.
                 return;
             }
 
-            _cancellationSource.Cancel();
+            if(_taskSchedule.TryGetValue(nextRun.Value, out List<ITask> tasks))
+            {
+                tasks.Add(task);
+            }
+            else
+            {
+                tasks = new List<ITask>
+                {
+                    task
+                };
+
+                _taskSchedule.Add(nextRun.Value, tasks);
+            }
         }
 
         public void RunScheduler()
         {
-            if(!Enabled)
-            {
-                return;
-            }
+            DateTime currentTime = DateTime.UtcNow;
 
-            lock(_taskLock)
+            List<KeyValuePair<DateTime, List<ITask>>> pendingTasks = _taskSchedule.Where(t => currentTime > t.Key).ToList();
+
+            foreach(KeyValuePair<DateTime, List<ITask>> scheduledTasks in pendingTasks)
             {
-                // Check each task thread for new thread space.
-                for(int i = 0; i < _taskThreads.Length; i++)
+                // Removed the DateTime task List as this is no longer valid.
+                _taskSchedule.Remove(scheduledTasks.Key);
+
+                foreach(ITask scheduledTask in scheduledTasks.Value)
                 {
-                    if(_taskThreads[i].Status == TaskStatus.Pending || _taskThreads[i].Status == TaskStatus.Running)
-                    {
-                        // This thread is currently in use so we skip it.
-                        continue;
-                    }
+                    _taskPool.EnqueueTask(scheduledTask);
 
-                    // This thread is empty so we can try to queue up a new task.
-                    if(!_taskQueue.TryDequeue(out ITask task))
-                    {
-                        // As there are no pending tasks, we exit the loop.
-                        return;
-                    }
-
-                    _taskThreads[i] = task;
-
-                    StartTaskAsync(task, i);
+                    // Reschedule the task in case it may need to run again.
+                    ScheduleTask(scheduledTask);
                 }
             }
-        }
-
-        private async void StartTaskAsync(ITask task, int threadIndex)
-        {
-            await Task.Factory.StartNew(async () =>
-            {
-                IServiceScope scope = null;
-
-                try
-                {
-                    _logger.LogDebug($"Task: {task.Identity} has Started");
-
-                    scope = _services.CreateScope();
-
-                    await task.StartAsync(scope.ServiceProvider, threadIndex, _cancellationSource.Token);
-
-                    _logger.LogDebug($"Task: {task.Identity} has Ended");
-                }
-                catch(Exception e)
-                {
-                    _logger.LogWarning(e, "An exception occurred whilst trying to start Task:{taskId}", task.Identity);
-                }
-                finally
-                {
-                    scope?.Dispose();
-                }
-            });
-        }
-
-        private async Task ExecuteServiceTaskAsync(ITask task, int threadIndex)
-        {
-            IServiceScope scope = _services.CreateScope();
-
-            await task.StartAsync(scope.ServiceProvider, threadIndex, _cancellationSource.Token);
-
-            scope.Dispose();
         }
     }
 }

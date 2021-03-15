@@ -1,4 +1,5 @@
 ﻿using System;
+using TaskBucket.Scheduling;
 using TaskBucket.Tasks.Enums;
 
 namespace TaskBucket.Tasks.Options
@@ -9,6 +10,8 @@ namespace TaskBucket.Tasks.Options
         /// Specifies the Priority of the Task
         /// </summary>
         TaskPriority Priority { get; }
+
+        ITaskScheduler Scheduler { get; }
 
         Action<ITaskReference> OnTaskFinished { get; }
     }

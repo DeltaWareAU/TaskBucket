@@ -2,14 +2,10 @@
 
 namespace TaskBucket.Scheduling.Scheduler
 {
-    public interface IScheduler
+    internal interface IScheduler
     {
-        bool IsRunning { get; }
-
         void ScheduleTask(ITask task);
 
         void RunScheduler();
-
-        void CancelAllCancellableTasks();
     }
 }

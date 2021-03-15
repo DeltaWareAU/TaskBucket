@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using TaskBucket.Tasks;
 using TaskBucket.Tasks.Enums;
 
-namespace TaskBucket.Scheduling
+namespace TaskBucket.Pooling
 {
     internal class ConcurrentTaskQueue
     {

@@ -7,8 +7,10 @@ using TaskBucket.Scheduling.Scheduler;
 
 namespace TaskBucket.Scheduling.HostedService
 {
-    public class ScheduleHost: IHostedService, IDisposable
+    internal class ScheduleHost: IHostedService, IDisposable
     {
+        private readonly TimeSpan _schedulerRunFrequency = TimeSpan.FromSeconds(1);
+
         private readonly ILogger _logger;
 
         private readonly IScheduler _scheduler;
@@ -33,39 +35,28 @@ namespace TaskBucket.Scheduling.HostedService
 
             _enabled = true;
 
-            _scheduleTimer = new Timer(RunScheduler, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+            _scheduleTimer = new Timer(RunScheduler, null, TimeSpan.Zero, _schedulerRunFrequency);
 
-            _logger.LogInformation("TaskBucket Scheduler has Started");
+            _logger.LogInformation("TaskBucket.TaskScheduler has Started");
 
             return Task.CompletedTask;
         }
 
-        public async Task StopAsync(CancellationToken cancellationToken)
+        public Task StopAsync(CancellationToken cancellationToken)
         {
             if(!_enabled)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             _enabled = false;
 
+            // Stops the scheduler from being invoked again
             _scheduleTimer.Change(Timeout.Infinite, Timeout.Infinite);
 
-            _scheduler.CancelAllCancellableTasks();
+            _logger.LogInformation("TaskBucket.TaskScheduler has stopped.");
 
-            if(_scheduler.IsRunning)
-            {
-                _logger?.LogWarning("TaskBucket Scheduler has stopped but there are tasks still running that could not be stopped - app shutdown will be postponed until these tasks have completed.");
-            }
-            else
-            {
-                _logger.LogInformation("TaskBucket Scheduler has stopped.");
-            }
-
-            while(_scheduler.IsRunning)
-            {
-                await Task.Delay(50, cancellationToken);
-            }
+            return Task.CompletedTask;
         }
 
         private void RunScheduler(object state)

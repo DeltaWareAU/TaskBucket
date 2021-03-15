@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using TaskBucket.Options;
+using TaskBucket.Pooling;
+using TaskBucket.Pooling.HostedService;
 using TaskBucket.Scheduling.HostedService;
 using TaskBucket.Scheduling.Scheduler;
 
@@ -24,9 +26,12 @@ namespace TaskBucket
 
             optionsFactory?.Invoke(optionsBuilder);
 
+            services.AddSingleton(optionsBuilder.BuildTaskPoolOptions());
+            services.AddSingleton<ITaskPool, TaskPool>();
+            services.AddHostedService<TaskPoolHost>();
+
             services.AddSingleton(optionsBuilder.BuildSchedulerOptions());
             services.AddSingleton<IScheduler, Scheduler>();
-
             services.AddHostedService<ScheduleHost>();
 
             services.AddSingleton(optionsBuilder.BuildBucketOptions());

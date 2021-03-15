@@ -5,6 +5,10 @@ VisualStudioVersion = 16.0.31005.135
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskBucket", "src\TaskBucket\TaskBucket.csproj", "{55E92034-E1B0-41F5-92C5-F5401265762C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{6D3A69FB-F2ED-45DB-B704-0C620DE10D53}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskBucket.Tests", "tests\TaskBucket.Tests\TaskBucket.Tests.csproj", "{3668CAD4-08BF-45AF-8165-AC2F0CDBFB4E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,9 +19,16 @@ Global
 		{55E92034-E1B0-41F5-92C5-F5401265762C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{55E92034-E1B0-41F5-92C5-F5401265762C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{55E92034-E1B0-41F5-92C5-F5401265762C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3668CAD4-08BF-45AF-8165-AC2F0CDBFB4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3668CAD4-08BF-45AF-8165-AC2F0CDBFB4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3668CAD4-08BF-45AF-8165-AC2F0CDBFB4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3668CAD4-08BF-45AF-8165-AC2F0CDBFB4E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3668CAD4-08BF-45AF-8165-AC2F0CDBFB4E} = {6D3A69FB-F2ED-45DB-B704-0C620DE10D53}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {47A842EA-29BC-4918-943D-BB82839041E5}
