@@ -10,22 +10,31 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Description>Hasle free asynchronous background tasks</Description>
-    <PackageTags>Tasks; Background; Async; Asynchronous</PackageTags>
+    <PackageTags>Tasks; Background; Async; Asynchronous; Pooling</PackageTags>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>1.0.0.13-prerelease</Version>
-    <PackageReleaseNotes>RENAMED | All References to Job to Task, this improves the symantics of the library.
-* AddBackgroundJob -&gt; AddBackgroundTask
-* IJobReference -&gt; ITaskReference
+    <Version>1.0.0.14-prerelease</Version>
+    <PackageReleaseNotes>Major refactor of underlying components, AspNet now handles the lifetime of the Scheduler. Thus the Scheduler is started and stoped by AspNet, meaning that if your background tasks are still running app shutdown will be postponed.
 
-ADDED | Documentation to most public methods and properties. This should help in usage
+REMOVED | InstanceTasks, all object instances should be retrieved by DI so I removed this function.
+REMOVED | TaskBucketStatus, I may replace this in the future with a debugging assistant. But for now it is gone for good.
 
-REWORKED | How options work
-REWORKED | How TaskHistory is kept</PackageReleaseNotes>
+ADDED | Scheduler allowing for better control over tasks and integration into AspNet
+ADDED | TaskPriority [Low, Normal, High, Critical] these are working, but eventually will play a role in Cron Jobs.
+ADDED | UseTaskBucket method, this can be used in Startup.Configure to easily add/start jobs as your App starts. Again this will be more powerful when Cron jobs are added.
+
+CHANGED | Default thread pool size from 10 to Logical Cores available to your App as reported by .Net
+
+IMPROVED | TaskBucketAwaiter Async methods, these methods now use Task.Delay instead of Thread.Sleep</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/DeltaWareAU/TaskBucket</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/DeltaWareAU/TaskBucket</RepositoryUrl>
+    <RepositoryType>GIT</RepositoryType>
+    <NeutralLanguage>en-AU</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DeltaWare.SDK.Common" Version="1.0.0.2-prerelease" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
   </ItemGroup>
 

@@ -1,4 +1,6 @@
 ﻿using System;
+using TaskBucket.Tasks.Enums;
+using TaskBucket.Tasks.Options;
 
 namespace TaskBucket.Tasks
 {
@@ -26,6 +28,8 @@ namespace TaskBucket.Tasks
         /// Specifies the Status of the Task
         /// </summary>
         TaskStatus Status { get; }
+
+        ITaskOptions Options { get; }
 
         /// <summary>
         /// Specifies the Execution Time of the Task

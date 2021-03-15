@@ -1,8 +1,10 @@
 ﻿using System;
+using TaskBucket.Tasks.Enums;
+using TaskBucket.Tasks.Options;
 
 namespace TaskBucket.Tasks
 {
-    internal class TaskReference: ITaskReference
+    internal abstract class TaskReference: ITaskReference
     {
         protected DateTime StartDate { get; set; } = DateTime.MinValue;
 
@@ -11,6 +13,8 @@ namespace TaskBucket.Tasks
         public int ThreadIndex { get; protected set; }
 
         public TaskStatus Status { get; protected set; }
+
+        public ITaskOptions Options { get; }
 
         public string Source { get; }
 
@@ -36,9 +40,15 @@ namespace TaskBucket.Tasks
 
         public Exception Exception { get; protected set; }
 
-        protected TaskReference(string source)
+        protected TaskReference(string source, ITaskOptions options)
         {
+            if(string.IsNullOrWhiteSpace(source))
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             Source = source;
+            Options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         public ITaskReference GetTaskReference()

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using TaskBucket.Options;
+using TaskBucket.Scheduling.HostedService;
+using TaskBucket.Scheduling.Scheduler;
 
 // ReSharper disable once CheckNamespace
 namespace TaskBucket
@@ -11,18 +13,23 @@ namespace TaskBucket
         /// Adds Task Bucket to Dependency Injection
         /// </summary>
         /// <param name="optionsFactory">Used to configure Task Bucket</param>
-        public static void AddTaskBucket(this IServiceCollection services, Action<IBucketOptionsBuilder> optionsFactory = null)
+        public static void AddTaskBucket(this IServiceCollection services, Action<ITaskBucketOptionsBuilder> optionsFactory = null)
         {
             if(services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            BucketOptionsBuilder optionsBuilder = new BucketOptionsBuilder();
+            TaskBucketOptionsBuilder optionsBuilder = new TaskBucketOptionsBuilder();
 
             optionsFactory?.Invoke(optionsBuilder);
 
-            services.AddSingleton(optionsBuilder.BuildOptions());
+            services.AddSingleton(optionsBuilder.BuildSchedulerOptions());
+            services.AddSingleton<IScheduler, Scheduler>();
+
+            services.AddHostedService<ScheduleHost>();
+
+            services.AddSingleton(optionsBuilder.BuildBucketOptions());
             services.AddSingleton<ITaskBucket, TaskBucket>();
         }
     }

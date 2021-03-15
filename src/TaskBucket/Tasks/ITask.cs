@@ -1,9 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace TaskBucket.Tasks
 {
-    internal interface IInstanceTask: ITaskReference
+    public interface ITask: ITaskReference
     {
-        Task ExecuteAsync(int threadIndex);
+        Task StartAsync(IServiceProvider services, int threadIndex, CancellationToken cancellationToken);
     }
 }

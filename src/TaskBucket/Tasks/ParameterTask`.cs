@@ -1,36 +1,35 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
+using TaskBucket.Tasks.Options;
+using TaskStatus = TaskBucket.Tasks.Enums.TaskStatus;
 
 namespace TaskBucket.Tasks
 {
     [DebuggerDisplay("Source: {Source} | {Status} - {Identity}")]
-    internal class ParameterTask<TService, TValue>: TaskReference, IServiceTask
+    internal class ParameterTask<TService, TValue>: TaskReference, ITask
     {
         private readonly TValue _parameter;
 
         private readonly Func<TService, TValue, Task> _task;
 
-        private readonly Func<TService, TValue, IServiceTask, Task> _referenceTask;
+        private readonly Func<TService, TValue, ITask, Task> _referenceTask;
 
-        private readonly Action<IServiceTask> _onJobFinished;
-
-        public ParameterTask(Func<TService, TValue, Task> task, TValue parameter, Action<IServiceTask> onJobFinished) : base(typeof(TService).Name)
+        public ParameterTask(Func<TService, TValue, Task> task, TValue parameter, ITaskOptions options) : base(typeof(TService).Name, options)
         {
             _task = task;
             _parameter = parameter;
-            _onJobFinished = onJobFinished;
         }
 
-        public ParameterTask(Func<TService, TValue, IServiceTask, Task> task, TValue parameter, Action<IServiceTask> onJobFinished) : base(typeof(TService).Name)
+        public ParameterTask(Func<TService, TValue, ITask, Task> task, TValue parameter, ITaskOptions options) : base(typeof(TService).Name, options)
         {
             _referenceTask = task;
             _parameter = parameter;
-            _onJobFinished = onJobFinished;
         }
 
-        public async Task ExecuteAsync(IServiceProvider services, int threadIndex)
+        public async Task StartAsync(IServiceProvider services, int threadIndex, CancellationToken cancellationToken)
         {
             if(services == null)
             {
@@ -41,10 +40,15 @@ namespace TaskBucket.Tasks
 
             if(Status != TaskStatus.Pending)
             {
-                throw new MethodAccessException();
+                throw new InvalidOperationException("A task cannot be started unless it is pending");
             }
 
-            TService instance = services.GetService<TService>();
+            TService instance = services.GetRequiredService<TService>();
+
+            if(instance is ICancellableTask cancellableTask)
+            {
+                cancellableTask.CancellationToken = cancellationToken;
+            }
 
             Status = TaskStatus.Running;
 
@@ -75,7 +79,7 @@ namespace TaskBucket.Tasks
             }
             finally
             {
-                _onJobFinished.Invoke(this);
+                Options.OnTaskFinished?.Invoke(this);
             }
         }
     }
