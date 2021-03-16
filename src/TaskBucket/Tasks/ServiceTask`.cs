@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskBucket.Tasks.Options;
@@ -14,6 +15,8 @@ namespace TaskBucket.Tasks
         private readonly Func<TService, Task> _task = null;
 
         private readonly Func<TService, ITaskReference, Task> _referenceTask = null;
+
+        public override bool IsCancelable { get; } = typeof(TService).GetInterfaces().Contains(typeof(ICancellableTask));
 
         public ServiceTask(Func<TService, Task> task, ITaskOptions options) : base(typeof(TService).Name, options)
         {

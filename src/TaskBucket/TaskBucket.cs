@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using TaskBucket.Options;
 using TaskBucket.Pooling;
+using TaskBucket.Scheduling.Scheduler;
 using TaskBucket.Tasks;
 using TaskBucket.Tasks.Options;
 
@@ -13,14 +14,16 @@ namespace TaskBucket
     {
         private readonly ILogger<ITaskBucket> _logger;
 
-        private readonly IBucketOptions _options;
+        private readonly ITaskBucketOptions _options;
 
-        private readonly ITaskPool _scheduler;
+        private readonly ITaskPool _taskPool;
 
-        public TaskBucket(IBucketOptions options, ITaskPool taskPool, ILogger<ITaskBucket> logger)
+        private readonly ITaskScheduler _taskScheduler;
+
+        public TaskBucket(ITaskBucketOptions options, ITaskPool taskPool, ILogger<ITaskBucket> logger)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
-            _scheduler = taskPool ?? throw new ArgumentNullException(nameof(taskPool));
+            _taskPool = taskPool ?? throw new ArgumentNullException(nameof(taskPool));
             _logger = logger;
         }
 
@@ -35,7 +38,7 @@ namespace TaskBucket
 
             ITask newTask = new ServiceTask<TDefinition>(action, options);
 
-            _scheduler.EnqueueTask(newTask);
+            _taskPool.EnqueueTask(newTask);
 
             return newTask;
         }
@@ -46,7 +49,7 @@ namespace TaskBucket
 
             ITask newTask = new ServiceTask<TDefinition>(action, options);
 
-            _scheduler.EnqueueTask(newTask);
+            _taskPool.EnqueueTask(newTask);
 
             return newTask;
         }
@@ -61,7 +64,7 @@ namespace TaskBucket
             {
                 ITask newTask = new ParameterTask<TDefinition, TParameter>(action, parameter, options);
 
-                _scheduler.EnqueueTask(newTask);
+                _taskPool.EnqueueTask(newTask);
 
                 references.Add(newTask);
             }
@@ -79,7 +82,7 @@ namespace TaskBucket
             {
                 ITask newTask = new ParameterTask<TDefinition, TParameter>(action, parameter, options);
 
-                _scheduler.EnqueueTask(newTask);
+                _taskPool.EnqueueTask(newTask);
 
                 references.Add(newTask);
             }

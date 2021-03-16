@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +28,7 @@ namespace TaskBucket.Pooling
 
         public bool IsRunning => _threadPool.Any(i => i != null);
 
-        public TaskPool(ITaskPoolOptions options, IServiceProvider services, ILogger<IScheduler> logger)
+        public TaskPool(ITaskPoolOptions options, IServiceProvider services, ILogger<ITaskScheduler> logger)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _services = services ?? throw new ArgumentNullException(nameof(services));
@@ -54,12 +55,14 @@ namespace TaskBucket.Pooling
             _cancellationSource.Cancel();
         }
 
-        public void StartPendingTasks()
+        public Task StartPendingTasksAsync()
         {
             // Check thread space availability.
+            List<Task> runningTasks = new List<Task>();
+
             for(int i = 0; i < _threadPool.Length; i++)
             {
-                if(_threadPool[i].Status == TaskStatus.Pending || _threadPool[i].Status == TaskStatus.Running)
+                if(_threadPool[i] != null && (_threadPool[i].Status == TaskStatus.Pending || _threadPool[i].Status == TaskStatus.Running))
                 {
                     // This thread is currently in use so we skip it.
                     continue;
@@ -69,16 +72,20 @@ namespace TaskBucket.Pooling
                 if(!_taskQueue.TryDequeue(out ITask task))
                 {
                     // As there are no pending tasks, we exit the loop.
-                    return;
+                    return Task.CompletedTask;
                 }
 
                 _threadPool[i] = task;
 
-                StartTaskAsync(task, i);
+                runningTasks.Add(StartTaskAsync(task, i));
             }
+
+            _logger?.LogDebug("TaskBucket.TaskPool has started {taskCount} background tasks", runningTasks.Count);
+
+            return Task.WhenAll(runningTasks);
         }
 
-        private async void StartTaskAsync(ITask task, int threadIndex)
+        private async Task StartTaskAsync(ITask task, int threadIndex)
         {
             await Task.Factory.StartNew(async () =>
             {
@@ -94,9 +101,10 @@ namespace TaskBucket.Pooling
 
                     _logger.LogDebug($"Task: {task.Identity} has Ended");
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    _logger.LogWarning(e, "An exception occurred whilst trying to start Task:{taskId}", task.Identity);
+                    _logger.LogWarning(e, "An exception occurred whilst trying to start Task:{taskId}",
+                        task.Identity);
                 }
                 finally
                 {

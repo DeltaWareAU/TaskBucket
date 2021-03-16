@@ -3,26 +3,28 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using TaskBucket.Pooling.Options;
 
 namespace TaskBucket.Pooling.HostedService
 {
     internal class TaskPoolHost: IHostedService, IDisposable
     {
-        private readonly TimeSpan _taskQueueFrequency = TimeSpan.FromSeconds(1);
-
         private readonly ILogger _logger;
 
         private readonly ITaskPool _taskPool;
+
+        private readonly ITaskPoolOptions _options;
 
         private Timer _taskQueueTimer;
 
         private bool _enabled;
 
-        public TaskPoolHost(ILogger<TaskPoolHost> logger, ITaskPool taskPool)
+        public TaskPoolHost(ILogger<TaskPoolHost> logger, ITaskPool taskPool, ITaskPoolOptions options)
         {
             _logger = logger;
 
             _taskPool = taskPool ?? throw new ArgumentNullException(nameof(taskPool));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -34,7 +36,7 @@ namespace TaskBucket.Pooling.HostedService
 
             _enabled = true;
 
-            _taskQueueTimer = new Timer(StartPendingTasks, null, TimeSpan.Zero, _taskQueueFrequency);
+            _taskQueueTimer = new Timer(StartPendingTasksAsync, null, TimeSpan.Zero, _options.CheckPendingTasksFrequency);
 
             _logger.LogInformation("TaskBucket.TaskPool has Started");
 
@@ -71,11 +73,11 @@ namespace TaskBucket.Pooling.HostedService
             }
         }
 
-        private void StartPendingTasks(object state)
+        private async void StartPendingTasksAsync(object state)
         {
             if(_enabled)
             {
-                _taskPool.StartPendingTasks();
+                await _taskPool.StartPendingTasksAsync();
             }
         }
 
@@ -99,6 +101,8 @@ namespace TaskBucket.Pooling.HostedService
 
             if(disposing)
             {
+                _logger?.LogTrace("TaskBucket.TaskQueue has been disposed.");
+
                 _taskQueueTimer?.Dispose();
             }
 

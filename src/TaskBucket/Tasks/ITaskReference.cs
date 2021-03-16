@@ -10,19 +10,19 @@ namespace TaskBucket.Tasks
     public interface ITaskReference
     {
         /// <summary>
+        /// Specifies the Identity of the Task
+        /// </summary>
+        Guid Identity { get; }
+
+        /// <summary>
         /// Specifies the source of the Task
         /// </summary>
         string Source { get; }
 
         /// <summary>
-        /// Specifies the Thread Index of the Task
+        /// Specifies is the task can be canceled.
         /// </summary>
-        int ThreadIndex { get; }
-
-        /// <summary>
-        /// Specifies the Identity of the Task
-        /// </summary>
-        Guid Identity { get; }
+        bool IsCancelable { get; }
 
         /// <summary>
         /// Specifies the Status of the Task
@@ -30,6 +30,11 @@ namespace TaskBucket.Tasks
         TaskStatus Status { get; }
 
         ITaskOptions Options { get; }
+
+        /// <summary>
+        /// Specifies the Thread Index of the Task
+        /// </summary>
+        int ThreadIndex { get; }
 
         /// <summary>
         /// Specifies the Execution Time of the Task

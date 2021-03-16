@@ -8,7 +8,7 @@ namespace TaskBucket.Tasks.Options
     {
         public TaskPriority Priority { get; set; } = TaskPriority.Normal;
 
-        public ITaskScheduler Scheduler { get; set; }
+        public ITaskSchedule Schedule { get; set; }
 
         public Action<ITaskReference> OnTaskFinished { get; set; }
     }

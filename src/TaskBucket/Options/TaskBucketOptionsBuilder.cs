@@ -6,20 +6,32 @@ namespace TaskBucket.Options
 {
     internal class TaskBucketOptionsBuilder: ITaskBucketOptionsBuilder
     {
+        private TimeSpan _checkPendingTasksFrequency = TimeSpan.FromSeconds(1);
+
         public int MaxConcurrentThreads { get; set; } = Environment.ProcessorCount;
 
         public TimeZoneInfo TimeZone { get; set; } = TimeZoneInfo.Local;
 
-        public IBucketOptions BuildBucketOptions()
+        public void SetTaskCheckingFrequency(int milliseconds)
         {
-            BucketOptions options = new BucketOptions();
+            _checkPendingTasksFrequency = TimeSpan.FromMilliseconds(milliseconds);
+        }
+
+        public void SetTaskCheckingFrequency(TimeSpan time)
+        {
+            _checkPendingTasksFrequency = time;
+        }
+
+        public ITaskBucketOptions BuildBucketOptions()
+        {
+            TaskBucketOptions options = new TaskBucketOptions();
 
             return options;
         }
 
-        public ISchedulerOptions BuildSchedulerOptions()
+        public ITaskSchedulerOptions BuildSchedulerOptions()
         {
-            SchedulerOptions options = new SchedulerOptions
+            TaskSchedulerOptions options = new TaskSchedulerOptions
             {
                 TimeZone = TimeZone
             };
@@ -31,7 +43,8 @@ namespace TaskBucket.Options
         {
             TaskPoolOptions options = new TaskPoolOptions
             {
-                MaxConcurrentThreads = MaxConcurrentThreads
+                MaxConcurrentThreads = MaxConcurrentThreads,
+                CheckPendingTasksFrequency = _checkPendingTasksFrequency
             };
 
             return options;

@@ -31,8 +31,8 @@ namespace TaskBucket
             services.AddHostedService<TaskPoolHost>();
 
             services.AddSingleton(optionsBuilder.BuildSchedulerOptions());
-            services.AddSingleton<IScheduler, Scheduler>();
-            services.AddHostedService<ScheduleHost>();
+            services.AddSingleton<ITaskScheduler, TaskScheduler>();
+            services.AddHostedService<TaskScheduleHost>();
 
             services.AddSingleton(optionsBuilder.BuildBucketOptions());
             services.AddSingleton<ITaskBucket, TaskBucket>();

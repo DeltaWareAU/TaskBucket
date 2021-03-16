@@ -12,6 +12,8 @@ namespace TaskBucket.Tasks
 
         public int ThreadIndex { get; protected set; }
 
+        public abstract bool IsCancelable { get; }
+
         public TaskStatus Status { get; protected set; }
 
         public ITaskOptions Options { get; }

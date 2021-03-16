@@ -11,7 +11,7 @@ namespace TaskBucket.Tasks.Options
         /// </summary>
         TaskPriority Priority { get; }
 
-        ITaskScheduler Scheduler { get; }
+        ITaskSchedule Schedule { get; }
 
         Action<ITaskReference> OnTaskFinished { get; }
     }

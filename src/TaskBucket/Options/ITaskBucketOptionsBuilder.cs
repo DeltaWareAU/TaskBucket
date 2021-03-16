@@ -11,5 +11,8 @@ namespace TaskBucket.Options
         int MaxConcurrentThreads { get; set; }
 
         TimeZoneInfo TimeZone { get; }
+
+        void SetTaskCheckingFrequency(int milliseconds);
+        void SetTaskCheckingFrequency(TimeSpan time);
     }
 }

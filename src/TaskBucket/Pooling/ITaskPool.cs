@@ -1,4 +1,5 @@
-﻿using TaskBucket.Tasks;
+﻿using System.Threading.Tasks;
+using TaskBucket.Tasks;
 
 namespace TaskBucket.Pooling
 {
@@ -8,7 +9,7 @@ namespace TaskBucket.Pooling
 
         void EnqueueTask(ITask task);
 
-        void StartPendingTasks();
+        Task StartPendingTasksAsync();
 
         void CancelAllCancellableTasks();
     }
