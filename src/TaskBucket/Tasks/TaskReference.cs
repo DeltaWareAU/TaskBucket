@@ -1,20 +1,23 @@
 ﻿using System;
+using TaskBucket.Scheduling;
 using TaskBucket.Tasks.Enums;
 using TaskBucket.Tasks.Options;
 
 namespace TaskBucket.Tasks
 {
-    internal abstract class TaskReference: ITaskReference
+    internal abstract class TaskReference : ITaskReference
     {
         protected DateTime StartDate { get; set; } = DateTime.MinValue;
 
         protected DateTime EndDate { get; set; } = DateTime.MinValue;
 
-        public int ThreadIndex { get; protected set; }
+        public int ThreadIndex { get; protected set; } = -1;
 
         public abstract bool IsCancelable { get; }
 
         public TaskStatus Status { get; protected set; }
+
+        public ITaskSchedule Schedule { get; set; }
 
         public ITaskOptions Options { get; }
 
@@ -26,12 +29,12 @@ namespace TaskBucket.Tasks
         {
             get
             {
-                if(StartDate == DateTime.MinValue)
+                if (StartDate == DateTime.MinValue)
                 {
                     return TimeSpan.Zero;
                 }
 
-                if(EndDate == DateTime.MinValue)
+                if (EndDate == DateTime.MinValue)
                 {
                     return DateTime.Now - StartDate;
                 }
@@ -44,7 +47,7 @@ namespace TaskBucket.Tasks
 
         protected TaskReference(string source, ITaskOptions options)
         {
-            if(string.IsNullOrWhiteSpace(source))
+            if (string.IsNullOrWhiteSpace(source))
             {
                 throw new ArgumentNullException(nameof(source));
             }

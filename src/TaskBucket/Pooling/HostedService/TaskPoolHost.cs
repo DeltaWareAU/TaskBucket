@@ -7,7 +7,7 @@ using TaskBucket.Pooling.Options;
 
 namespace TaskBucket.Pooling.HostedService
 {
-    internal class TaskPoolHost: IHostedService, IDisposable
+    internal class TaskPoolHost : IHostedService, IDisposable
     {
         private readonly ILogger _logger;
 
@@ -29,7 +29,7 @@ namespace TaskBucket.Pooling.HostedService
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            if(_enabled)
+            if (_enabled)
             {
                 return Task.CompletedTask;
             }
@@ -45,7 +45,7 @@ namespace TaskBucket.Pooling.HostedService
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            if(!_enabled)
+            if (!_enabled)
             {
                 return;
             }
@@ -57,7 +57,7 @@ namespace TaskBucket.Pooling.HostedService
 
             _taskPool.CancelAllCancellableTasks();
 
-            if(_taskPool.IsRunning)
+            if (_taskPool.IsRunning)
             {
                 _logger?.LogWarning(
                     "TaskBucket.TaskPool has stopped but there are tasks still running that could not be stopped - app shutdown will be postponed until these tasks have completed.");
@@ -67,7 +67,7 @@ namespace TaskBucket.Pooling.HostedService
                 _logger.LogInformation("TaskBucket.TaskPool has stopped.");
             }
 
-            while(_taskPool.IsRunning)
+            while (_taskPool.IsRunning)
             {
                 await Task.Delay(50, cancellationToken);
             }
@@ -75,7 +75,7 @@ namespace TaskBucket.Pooling.HostedService
 
         private async void StartPendingTasksAsync(object state)
         {
-            if(_enabled)
+            if (_enabled)
             {
                 await _taskPool.StartPendingTasksAsync();
             }
@@ -94,12 +94,12 @@ namespace TaskBucket.Pooling.HostedService
 
         protected virtual void Dispose(bool disposing)
         {
-            if(_disposed)
+            if (_disposed)
             {
                 return;
             }
 
-            if(disposing)
+            if (disposing)
             {
                 _logger?.LogTrace("TaskBucket.TaskQueue has been disposed.");
 

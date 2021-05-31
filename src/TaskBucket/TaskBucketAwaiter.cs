@@ -22,7 +22,7 @@ namespace TaskBucket
         /// <param name="task">The task to be waited for</param>
         public static void Wait(ITaskReference task)
         {
-            while(task.Status == TaskStatus.Pending || task.Status == TaskStatus.Running)
+            while (task.Status == TaskStatus.Pending || task.Status == TaskStatus.Running)
             {
                 Thread.Sleep(PollRateMs);
             }
@@ -34,7 +34,7 @@ namespace TaskBucket
         /// <param name="tasks">The tasks to be waited for</param>
         public static void WaitAll(params ITaskReference[] tasks)
         {
-            foreach(ITaskReference task in tasks)
+            foreach (ITaskReference task in tasks)
             {
                 Wait(task);
             }
@@ -46,7 +46,7 @@ namespace TaskBucket
         /// <param name="tasks">The tasks to be waited for</param>
         public static void WaitAll(List<ITaskReference> tasks)
         {
-            foreach(ITaskReference task in tasks)
+            foreach (ITaskReference task in tasks)
             {
                 Wait(task);
             }
@@ -58,7 +58,7 @@ namespace TaskBucket
         /// <param name="task">The task to be waited for</param>
         public static async Task WaitAsync(ITaskReference task)
         {
-            while(task.Status == TaskStatus.Pending || task.Status == TaskStatus.Running)
+            while (task.Status == TaskStatus.Pending || task.Status == TaskStatus.Running)
             {
                 await Task.Delay(PollRateMs);
             }
@@ -70,7 +70,7 @@ namespace TaskBucket
         /// <param name="tasks">The tasks to be waited for</param>
         public static async Task WaitAllAsync(params ITaskReference[] tasks)
         {
-            foreach(ITaskReference task in tasks)
+            foreach (ITaskReference task in tasks)
             {
                 await WaitAsync(task);
             }

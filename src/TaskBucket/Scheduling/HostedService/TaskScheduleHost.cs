@@ -7,7 +7,7 @@ using TaskBucket.Scheduling.Scheduler;
 
 namespace TaskBucket.Scheduling.HostedService
 {
-    internal class TaskScheduleHost: IHostedService, IDisposable
+    internal class TaskScheduleHost : IHostedService, IDisposable
     {
         private readonly TimeSpan _schedulerRunFrequency = TimeSpan.FromSeconds(1);
 
@@ -28,7 +28,7 @@ namespace TaskBucket.Scheduling.HostedService
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            if(_enabled)
+            if (_enabled)
             {
                 return Task.CompletedTask;
             }
@@ -44,7 +44,7 @@ namespace TaskBucket.Scheduling.HostedService
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            if(!_enabled)
+            if (!_enabled)
             {
                 return Task.CompletedTask;
             }
@@ -61,7 +61,7 @@ namespace TaskBucket.Scheduling.HostedService
 
         private void RunScheduler(object state)
         {
-            if(_enabled)
+            if (_enabled)
             {
                 _taskScheduler.RunScheduler();
             }
@@ -79,12 +79,12 @@ namespace TaskBucket.Scheduling.HostedService
         }
         protected virtual void Dispose(bool disposing)
         {
-            if(_disposed)
+            if (_disposed)
             {
                 return;
             }
 
-            if(disposing)
+            if (disposing)
             {
                 _logger?.LogTrace("TaskBucket.TaskScheduler has been disposed.");
 

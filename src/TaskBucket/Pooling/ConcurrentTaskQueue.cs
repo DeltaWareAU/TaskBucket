@@ -17,22 +17,22 @@ namespace TaskBucket.Pooling
 
         public void Enqueue(ITask task)
         {
-            switch(task.Options.Priority)
+            switch (task.Options.Priority)
             {
                 case TaskPriority.Critical:
-                _criticalPriorityQueue.Enqueue(task);
-                break;
+                    _criticalPriorityQueue.Enqueue(task);
+                    break;
                 case TaskPriority.High:
-                _highPriorityQueue.Enqueue(task);
-                break;
+                    _highPriorityQueue.Enqueue(task);
+                    break;
                 case TaskPriority.Normal:
-                _normalPriorityQueue.Enqueue(task);
-                break;
+                    _normalPriorityQueue.Enqueue(task);
+                    break;
                 case TaskPriority.Low:
-                _lowPriorityQueue.Enqueue(task);
-                break;
+                    _lowPriorityQueue.Enqueue(task);
+                    break;
                 default:
-                throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
@@ -43,22 +43,22 @@ namespace TaskBucket.Pooling
         /// <returns></returns>
         public bool TryDequeue(out ITask task)
         {
-            if(_criticalPriorityQueue.TryDequeue(out task))
+            if (_criticalPriorityQueue.TryDequeue(out task))
             {
                 return true;
             }
 
-            if(_highPriorityQueue.TryDequeue(out task))
+            if (_highPriorityQueue.TryDequeue(out task))
             {
                 return true;
             }
 
-            if(_normalPriorityQueue.TryDequeue(out task))
+            if (_normalPriorityQueue.TryDequeue(out task))
             {
                 return true;
             }
 
-            if(_lowPriorityQueue.TryDequeue(out task))
+            if (_lowPriorityQueue.TryDequeue(out task))
             {
                 return true;
             }

@@ -10,7 +10,7 @@ using TaskStatus = TaskBucket.Tasks.Enums.TaskStatus;
 namespace TaskBucket.Tasks
 {
     [DebuggerDisplay("Source: {Source} | {Status} - {Identity}")]
-    internal class ParameterTask<TService, TValue>: TaskReference, ITask
+    internal class ParameterTask<TService, TValue> : TaskReference, ITask
     {
         private readonly TValue _parameter;
 
@@ -26,6 +26,11 @@ namespace TaskBucket.Tasks
             _parameter = parameter;
         }
 
+        public ITask Copy()
+        {
+            return new ParameterTask<TService, TValue>(_task, _parameter, Options);
+        }
+
         public ParameterTask(Func<TService, TValue, ITask, Task> task, TValue parameter, ITaskOptions options) : base(typeof(TService).Name, options)
         {
             _referenceTask = task;
@@ -34,21 +39,21 @@ namespace TaskBucket.Tasks
 
         public async Task StartAsync(IServiceProvider services, int threadIndex, CancellationToken cancellationToken)
         {
-            if(services == null)
+            if (services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
             ThreadIndex = threadIndex;
 
-            if(Status != TaskStatus.Pending)
+            if (Status != TaskStatus.Pending)
             {
                 throw new InvalidOperationException("A task cannot be started unless it is pending");
             }
 
             TService instance = services.GetRequiredService<TService>();
 
-            if(instance is ICancellableTask cancellableTask)
+            if (instance is ICancellableTask cancellableTask)
             {
                 cancellableTask.CancellationToken = cancellationToken;
             }
@@ -59,7 +64,7 @@ namespace TaskBucket.Tasks
 
             try
             {
-                if(_task == null)
+                if (_task == null)
                 {
                     await _referenceTask.Invoke(instance, _parameter, this);
                 }
@@ -72,7 +77,7 @@ namespace TaskBucket.Tasks
 
                 Status = TaskStatus.Completed;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 EndDate = DateTime.Now;
 

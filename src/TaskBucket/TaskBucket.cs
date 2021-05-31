@@ -10,7 +10,7 @@ using TaskBucket.Tasks.Options;
 
 namespace TaskBucket
 {
-    internal class TaskBucket: ITaskBucket
+    internal class TaskBucket : ITaskBucket
     {
         private readonly ILogger<ITaskBucket> _logger;
 
@@ -20,10 +20,11 @@ namespace TaskBucket
 
         private readonly ITaskScheduler _taskScheduler;
 
-        public TaskBucket(ITaskBucketOptions options, ITaskPool taskPool, ILogger<ITaskBucket> logger)
+        public TaskBucket(ITaskBucketOptions options, ITaskPool taskPool, ITaskScheduler taskScheduler, ILogger<ITaskBucket> logger)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _taskPool = taskPool ?? throw new ArgumentNullException(nameof(taskPool));
+            _taskScheduler = taskScheduler ?? throw new ArgumentNullException(nameof(taskScheduler));
             _logger = logger;
         }
 
@@ -38,7 +39,14 @@ namespace TaskBucket
 
             ITask newTask = new ServiceTask<TDefinition>(action, options);
 
-            _taskPool.EnqueueTask(newTask);
+            if (newTask.Options.Schedule == null)
+            {
+                _taskPool.EnqueueTask(newTask);
+            }
+            else
+            {
+                _taskScheduler.ScheduleTask(newTask);
+            }
 
             return newTask;
         }
@@ -49,7 +57,14 @@ namespace TaskBucket
 
             ITask newTask = new ServiceTask<TDefinition>(action, options);
 
-            _taskPool.EnqueueTask(newTask);
+            if (newTask.Options.Schedule == null)
+            {
+                _taskPool.EnqueueTask(newTask);
+            }
+            else
+            {
+                _taskScheduler.ScheduleTask(newTask);
+            }
 
             return newTask;
         }
@@ -60,11 +75,18 @@ namespace TaskBucket
 
             List<ITaskReference> references = new List<ITaskReference>();
 
-            foreach(TParameter parameter in parameters)
+            foreach (TParameter parameter in parameters)
             {
                 ITask newTask = new ParameterTask<TDefinition, TParameter>(action, parameter, options);
 
-                _taskPool.EnqueueTask(newTask);
+                if (newTask.Options.Schedule == null)
+                {
+                    _taskPool.EnqueueTask(newTask);
+                }
+                else
+                {
+                    _taskScheduler.ScheduleTask(newTask);
+                }
 
                 references.Add(newTask);
             }
@@ -78,11 +100,18 @@ namespace TaskBucket
 
             List<ITaskReference> references = new List<ITaskReference>();
 
-            foreach(TParameter parameter in parameters)
+            foreach (TParameter parameter in parameters)
             {
                 ITask newTask = new ParameterTask<TDefinition, TParameter>(action, parameter, options);
 
-                _taskPool.EnqueueTask(newTask);
+                if (newTask.Options.Schedule == null)
+                {
+                    _taskPool.EnqueueTask(newTask);
+                }
+                else
+                {
+                    _taskScheduler.ScheduleTask(newTask);
+                }
 
                 references.Add(newTask);
             }

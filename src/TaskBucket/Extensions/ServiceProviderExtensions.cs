@@ -8,12 +8,12 @@ namespace TaskBucket
     {
         public static void UseTaskBucket(this IServiceProvider services, Action<ITaskBucket> taskBucketFactory)
         {
-            if(services == null)
+            if (services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if(taskBucketFactory == null)
+            if (taskBucketFactory == null)
             {
                 throw new ArgumentNullException(nameof(taskBucketFactory));
             }

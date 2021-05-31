@@ -4,7 +4,7 @@ using TaskBucket.Scheduling.Options;
 
 namespace TaskBucket.Options
 {
-    internal class TaskBucketOptionsBuilder: ITaskBucketOptionsBuilder
+    internal class TaskBucketOptionsBuilder : ITaskBucketOptionsBuilder
     {
         private TimeSpan _checkPendingTasksFrequency = TimeSpan.FromSeconds(1);
 

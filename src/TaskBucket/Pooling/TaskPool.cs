@@ -12,7 +12,7 @@ using TaskStatus = TaskBucket.Tasks.Enums.TaskStatus;
 
 namespace TaskBucket.Pooling
 {
-    internal class TaskPool: ITaskPool
+    internal class TaskPool : ITaskPool
     {
         private readonly ILogger _logger;
 
@@ -47,7 +47,7 @@ namespace TaskBucket.Pooling
 
         public void CancelAllCancellableTasks()
         {
-            if(_cancellationSource.IsCancellationRequested)
+            if (_cancellationSource.IsCancellationRequested)
             {
                 return;
             }
@@ -60,16 +60,16 @@ namespace TaskBucket.Pooling
             // Check thread space availability.
             List<Task> runningTasks = new List<Task>();
 
-            for(int i = 0; i < _threadPool.Length; i++)
+            for (int i = 0; i < _threadPool.Length; i++)
             {
-                if(_threadPool[i] != null && (_threadPool[i].Status == TaskStatus.Pending || _threadPool[i].Status == TaskStatus.Running))
+                if (_threadPool[i] != null && (_threadPool[i].Status == TaskStatus.Pending || _threadPool[i].Status == TaskStatus.Running))
                 {
                     // This thread is currently in use so we skip it.
                     continue;
                 }
 
                 // This thread is empty so we can try to queue up a new task.
-                if(!_taskQueue.TryDequeue(out ITask task))
+                if (!_taskQueue.TryDequeue(out ITask task))
                 {
                     // As there are no pending tasks, we exit the loop.
                     return Task.CompletedTask;

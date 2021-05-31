@@ -17,7 +17,7 @@ namespace TaskBucket
         /// <param name="optionsFactory">Used to configure Task Bucket</param>
         public static void AddTaskBucket(this IServiceCollection services, Action<ITaskBucketOptionsBuilder> optionsFactory = null)
         {
-            if(services == null)
+            if (services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }

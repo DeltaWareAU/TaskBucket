@@ -1,6 +1,6 @@
 ﻿namespace TaskBucket.Options
 {
-    internal class TaskBucketOptions: ITaskBucketOptions
+    internal class TaskBucketOptions : ITaskBucketOptions
     {
     }
 }

@@ -5,10 +5,11 @@ using System.Linq;
 using TaskBucket.Pooling;
 using TaskBucket.Scheduling.Options;
 using TaskBucket.Tasks;
+using TaskBucket.Tasks.Enums;
 
 namespace TaskBucket.Scheduling.Scheduler
 {
-    internal class TaskScheduler: ITaskScheduler
+    internal class TaskScheduler : ITaskScheduler
     {
         private readonly ILogger _logger;
 
@@ -28,15 +29,21 @@ namespace TaskBucket.Scheduling.Scheduler
 
         public void ScheduleTask(ITask task)
         {
+            if (task.Options.Schedule == null)
+            {
+                throw new ArgumentNullException(nameof(task.Options.Schedule),
+                    "A Task Schedule must be set before scheduling a task");
+            }
+
             DateTime? nextRun = task.Options.Schedule.GetNextSchedule(DateTime.UtcNow, _options.TimeZone);
 
-            if(nextRun == null)
+            if (nextRun == null)
             {
                 // A null next run date means we won't be running the task again.
                 return;
             }
 
-            if(_taskSchedule.TryGetValue(nextRun.Value, out List<ITask> tasks))
+            if (_taskSchedule.TryGetValue(nextRun.Value, out List<ITask> tasks))
             {
                 tasks.Add(task);
             }
@@ -57,17 +64,18 @@ namespace TaskBucket.Scheduling.Scheduler
 
             List<KeyValuePair<DateTime, List<ITask>>> pendingTasks = _taskSchedule.Where(t => currentTime > t.Key).ToList();
 
-            foreach(KeyValuePair<DateTime, List<ITask>> scheduledTasks in pendingTasks)
+            foreach (KeyValuePair<DateTime, List<ITask>> scheduledTasks in pendingTasks)
             {
                 // Removed the DateTime task List as this is no longer valid.
                 _taskSchedule.Remove(scheduledTasks.Key);
 
-                foreach(ITask scheduledTask in scheduledTasks.Value)
+                foreach (ITask scheduledTask in scheduledTasks.Value)
                 {
                     _taskPool.EnqueueTask(scheduledTask);
-
+                    
                     // Reschedule the task in case it may need to run again.
-                    ScheduleTask(scheduledTask);
+                    // When a task is rescheduled a new instance of it will be created - this ensures unique tasks.
+                    ScheduleTask(scheduledTask.Copy());
                 }
             }
         }

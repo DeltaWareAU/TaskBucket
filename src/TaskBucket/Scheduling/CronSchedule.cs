@@ -3,7 +3,7 @@ using System;
 
 namespace TaskBucket.Scheduling
 {
-    internal class CronSchedule: ITaskSchedule
+    internal class CronSchedule : ITaskSchedule
     {
         private readonly CronExpression _cronSchedule;
 
