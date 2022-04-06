@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using TaskBucket.Tasks;
-using TaskStatus = TaskBucket.Tasks.Enums.TaskStatus;
+using TaskBucket.Tasks.Enums;
 
 namespace TaskBucket
 {
@@ -17,72 +17,111 @@ namespace TaskBucket
         private const int PollRateMs = 50;
 
         /// <summary>
-        /// Locks the current thread until the task has completed
+        /// Waits for the task to complete synchronously
         /// </summary>
         /// <param name="task">The task to be waited for</param>
-        public static void Wait(ITaskReference task)
+        public static void Wait(this ITask task)
         {
-            while(task.Status == TaskStatus.Pending || task.Status == TaskStatus.Running)
+            while (task.State is TaskState.Pending or TaskState.Running)
             {
                 Thread.Sleep(PollRateMs);
             }
         }
 
         /// <summary>
-        /// Locks the current thread until the tasks have completed
-        /// </summary>
-        /// <param name="tasks">The tasks to be waited for</param>
-        public static void WaitAll(params ITaskReference[] tasks)
-        {
-            foreach(ITaskReference task in tasks)
-            {
-                Wait(task);
-            }
-        }
-
-        /// <summary>
-        /// Locks the current thread until the tasks have completed
-        /// </summary>
-        /// <param name="tasks">The tasks to be waited for</param>
-        public static void WaitAll(List<ITaskReference> tasks)
-        {
-            foreach(ITaskReference task in tasks)
-            {
-                Wait(task);
-            }
-        }
-
-        /// <summary>
-        /// Waits for the task to complete
+        /// Waits for the task to complete synchronously
         /// </summary>
         /// <param name="task">The task to be waited for</param>
-        public static async Task WaitAsync(ITaskReference task)
+        public static TResult Wait<TResult>(this ITask<TResult> task)
         {
-            while(task.Status == TaskStatus.Pending || task.Status == TaskStatus.Running)
+            while (task.State is TaskState.Pending or TaskState.Running)
+            {
+                Thread.Sleep(PollRateMs);
+            }
+
+            return task.Result;
+        }
+
+        /// <summary>
+        /// Waits for the tasks to complete synchronously
+        /// </summary>
+        /// <param name="tasks">The tasks to be waited for</param>
+        public static IEnumerable<TResult> WaitAll<TResult>(this IEnumerable<ITask<TResult>> tasks)
+        {
+            List<TResult> results = new List<TResult>();
+
+            foreach (ITask<TResult> task in tasks)
+            {
+                results.Add(task.Wait());
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Waits for the tasks to complete synchronously
+        /// </summary>
+        /// <param name="tasks">The tasks to be waited for</param>
+        public static void WaitAll(this IEnumerable<ITask> tasks)
+        {
+            foreach (ITask task in tasks)
+            {
+                task.Wait();
+            }
+        }
+
+        /// <summary>
+        /// Waits for the tasks to complete asynchronously
+        /// </summary>
+        /// <param name="tasks">The task to be waited for</param>
+        public static async Task WaitAllAsync(this IEnumerable<ITask> tasks)
+        {
+            foreach (ITask task in tasks)
+            {
+                await task.WaitAsync();
+            }
+        }
+
+        /// <summary>
+        /// Waits for the tasks to complete asynchronously
+        /// </summary>
+        /// <param name="tasks">The task to be waited for</param>
+        public static async Task<IEnumerable<TResult>> WaitAllAsync<TResult>(this IEnumerable<ITask<TResult>> tasks)
+        {
+            List<TResult> results = new List<TResult>();
+
+            foreach (ITask<TResult> task in tasks)
+            {
+                results.Add(await task.WaitAsync());
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Waits for the task to complete asynchronously
+        /// </summary>
+        /// <param name="task">The tasks to be waited for</param>
+        public static async Task WaitAsync(this ITask task)
+        {
+            while (task.State is TaskState.Pending or TaskState.Running)
             {
                 await Task.Delay(PollRateMs);
             }
         }
 
         /// <summary>
-        /// Waits for the tasks to complete
+        /// Waits for the task to complete asynchronously
         /// </summary>
-        /// <param name="tasks">The tasks to be waited for</param>
-        public static async Task WaitAllAsync(params ITaskReference[] tasks)
+        /// <param name="task">The tasks to be waited for</param>
+        public static async Task<TResult> WaitAsync<TResult>(this ITask<TResult> task)
         {
-            foreach(ITaskReference task in tasks)
+            while (task.State is TaskState.Pending or TaskState.Running)
             {
-                await WaitAsync(task);
+                await Task.Delay(PollRateMs);
             }
-        }
 
-        /// <summary>
-        /// Waits for the tasks to complete
-        /// </summary>
-        /// <param name="tasks">The tasks to be waited for</param>
-        public static Task WaitAllAsync(List<ITaskReference> tasks)
-        {
-            return WaitAllAsync(tasks.ToArray());
+            return task.Result;
         }
     }
 }
