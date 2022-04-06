@@ -1,37 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <Authors>Bradley Clarke</Authors>
     <Company>DeltaWare</Company>
     <Copyright>Copyright (c) 2020 DeltaWare</Copyright>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageIcon>nuget_logo.png</PackageIcon>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <Description>Hasle free asynchronous background tasks</Description>
     <PackageTags>Tasks; Background; Async; Asynchronous; Pooling</PackageTags>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>1.0.0.14-prerelease</Version>
-    <PackageReleaseNotes>Major refactor of underlying components, AspNet now handles the lifetime of the Scheduler. Thus the Scheduler is started and stoped by AspNet, meaning that if your background tasks are still running app shutdown will be postponed.
-
-REMOVED | InstanceTasks, all object instances should be retrieved by DI so I removed this function.
-REMOVED | TaskBucketStatus, I may replace this in the future with a debugging assistant. But for now it is gone for good.
-
-ADDED | Scheduler allowing for better control over tasks and integration into AspNet
-ADDED | TaskPriority [Low, Normal, High, Critical] these are working, but eventually will play a role in Cron Jobs.
-ADDED | UseTaskBucket method, this can be used in Startup.Configure to easily add/start jobs as your App starts. Again this will be more powerful when Cron jobs are added.
-
-CHANGED | Default thread pool size from 10 to Logical Cores available to your App as reported by .Net
-
-IMPROVED | TaskBucketAwaiter Async methods, these methods now use Task.Delay instead of Thread.Sleep</PackageReleaseNotes>
+    <Version>5.0.0.1</Version>
+    <PackageReleaseNotes></PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/DeltaWareAU/TaskBucket</PackageProjectUrl>
     <RepositoryUrl>https://github.com/DeltaWareAU/TaskBucket</RepositoryUrl>
     <RepositoryType>GIT</RepositoryType>
     <NeutralLanguage>en-AU</NeutralLanguage>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Cronos" Version="0.7.1" />
+    <PackageReference Include="DeltaWare.SDK.Core" Version="5.0.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
@@ -46,6 +38,10 @@ IMPROVED | TaskBucketAwaiter Async methods, these methods now use Task.Delay ins
     <None Include="..\..\nuget_logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
 

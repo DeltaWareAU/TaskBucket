@@ -1,13 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using TaskBucket.Options;
+using TaskBucket.Pooling;
+using TaskBucket.Pooling.HostedService;
 using TaskBucket.Scheduling.HostedService;
 using TaskBucket.Scheduling.Scheduler;
 
 // ReSharper disable once CheckNamespace
 namespace TaskBucket
 {
-    public static class ServiceCollectionExtensions
+    public static class TaskBucketServiceCollection
     {
         /// <summary>
         /// Adds Task Bucket to Dependency Injection
@@ -15,7 +17,7 @@ namespace TaskBucket
         /// <param name="optionsFactory">Used to configure Task Bucket</param>
         public static void AddTaskBucket(this IServiceCollection services, Action<ITaskBucketOptionsBuilder> optionsFactory = null)
         {
-            if(services == null)
+            if (services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -24,13 +26,18 @@ namespace TaskBucket
 
             optionsFactory?.Invoke(optionsBuilder);
 
-            services.AddSingleton(optionsBuilder.BuildSchedulerOptions());
-            services.AddSingleton<IScheduler, Scheduler>();
+            services
+                .AddSingleton(optionsBuilder.BuildTaskPoolOptions())
+                .AddSingleton<ITaskPool, TaskPool>()
+                .AddHostedService<TaskPoolHost>();
 
-            services.AddHostedService<ScheduleHost>();
+            services
+                .AddSingleton(optionsBuilder.BuildSchedulerOptions())
+                .AddSingleton<ITaskScheduler, TaskScheduler>()
+                .AddHostedService<TaskScheduleHost>();
 
-            services.AddSingleton(optionsBuilder.BuildBucketOptions());
-            services.AddSingleton<ITaskBucket, TaskBucket>();
+            services
+                .AddSingleton<ITaskBucket, TaskBucket>();
         }
     }
 }
