@@ -7,17 +7,18 @@ using TaskBucket.Pooling.Options;
 
 namespace TaskBucket.Pooling.HostedService
 {
-    internal class TaskPoolHost : IHostedService, IDisposable
+    /// <summary>
+    /// Hosts the <see cref="ITaskPool"/> as a <see cref="IHostedService"/>.
+    /// </summary>
+    /// <remarks>This is done to ensure that if the application is shutdown any pending tasks can either complete or be cancelled gracefully before the application can exit.</remarks>
+    internal class TaskPoolHost : IHostedService, IAsyncDisposable, IDisposable
     {
         private readonly ILogger _logger;
 
-        private readonly ITaskPool _taskPool;
-
         private readonly ITaskPoolOptions _options;
-
+        private readonly ITaskPool _taskPool;
+        private bool _isRunning;
         private Timer _taskQueueTimer;
-
-        private bool _enabled;
 
         public TaskPoolHost(ILogger<TaskPoolHost> logger, ITaskPool taskPool, ITaskPoolOptions options)
         {
@@ -27,55 +28,99 @@ namespace TaskBucket.Pooling.HostedService
             _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
+        /// <summary>
+        /// Starts the hosted service.
+        /// </summary>
+        public void Start()
+        {
+            InternalStart();
+        }
+
+        /// <inheritdoc/>
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            if (_enabled)
-            {
-                return Task.CompletedTask;
-            }
-
-            _enabled = true;
-
-            _taskQueueTimer = new Timer(StartPendingTasksAsync, null, TimeSpan.Zero, _options.CheckPendingTasksFrequency);
-
-            _logger.LogInformation("TaskBucket.TaskPool has Started");
+            InternalStart();
 
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Stops the hosted service.
+        /// </summary>
+        /// <param name="cancellationToken">Indicates that the stop process has been aborted.</param>
+        public void Stop(CancellationToken cancellationToken)
+        {
+            InternalStop();
+
+            while (_taskPool.IsRunning)
+            {
+                _logger?.LogWarning("There are {taskCount} tasks running - app shutdown will be postponed until these tasks have completed.", _taskPool.ExecutingTaskCount);
+
+                Thread.Sleep(1000);
+            }
+
+            _logger?.LogInformation("Stopped.");
+        }
+
+        /// <inheritdoc/>
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            if (!_enabled)
+            InternalStop();
+
+            while (_taskPool.IsRunning)
+            {
+                _logger?.LogWarning("There are {taskCount} tasks running - app shutdown will be postponed until these tasks have completed.", _taskPool.ExecutingTaskCount);
+
+                // We don't want to cancel the Delay.
+                // ReSharper disable once MethodSupportsCancellation
+                await Task.Delay(1000);
+            }
+
+            _logger?.LogInformation("Stopped.");
+        }
+
+        /// <summary>
+        /// Starts the hosted service.
+        /// </summary>
+        protected virtual void InternalStart()
+        {
+            if (_isRunning)
             {
                 return;
             }
 
-            _enabled = false;
+            _logger?.LogInformation("Starting.");
+
+            _isRunning = true;
+
+            _taskQueueTimer = new Timer(StartPendingTasksAsync, null, TimeSpan.Zero, _options.TaskQueueCheckingInterval);
+
+            _logger?.LogInformation("Started.");
+        }
+
+        /// <summary>
+        /// Stops the hosted service.
+        /// </summary>
+        protected virtual void InternalStop()
+        {
+            if (!_isRunning)
+            {
+                return;
+            }
+
+            _logger?.LogInformation("Stopping.");
+
+            _isRunning = false;
 
             // Stops the scheduler from being invoked again
             _taskQueueTimer.Change(Timeout.Infinite, Timeout.Infinite);
 
             _taskPool.CancelAllCancellableTasks();
-
-            if (_taskPool.IsRunning)
-            {
-                _logger?.LogWarning(
-                    "TaskBucket.TaskPool has stopped but there are tasks still running that could not be stopped - app shutdown will be postponed until these tasks have completed.");
-            }
-            else
-            {
-                _logger.LogInformation("TaskBucket.TaskPool has stopped.");
-            }
-
-            while (_taskPool.IsRunning)
-            {
-                await Task.Delay(50, cancellationToken);
-            }
         }
 
         private async void StartPendingTasksAsync(object state)
         {
-            if (_enabled)
+            if (_isRunning)
             {
                 await _taskPool.StartPendingTasksAsync();
             }
@@ -92,6 +137,13 @@ namespace TaskBucket.Pooling.HostedService
             GC.SuppressFinalize(this);
         }
 
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsync(true);
+
+            GC.SuppressFinalize(this);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed)
@@ -101,7 +153,9 @@ namespace TaskBucket.Pooling.HostedService
 
             if (disposing)
             {
-                _logger?.LogTrace("TaskBucket.TaskQueue has been disposed.");
+                Stop(CancellationToken.None);
+
+                _logger?.LogTrace("Has been disposed.");
 
                 _taskQueueTimer?.Dispose();
             }
@@ -109,6 +163,28 @@ namespace TaskBucket.Pooling.HostedService
             _disposed = true;
         }
 
-        #endregion
+        protected virtual async ValueTask DisposeAsync(bool disposing)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                await StopAsync(CancellationToken.None);
+
+                _logger?.LogTrace("Has been disposed.");
+
+                if (_taskQueueTimer != null)
+                {
+                    await _taskQueueTimer.DisposeAsync();
+                }
+            }
+
+            _disposed = true;
+        }
+
+        #endregion IDisposable
     }
 }

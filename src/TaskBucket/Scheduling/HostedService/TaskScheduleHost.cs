@@ -3,27 +3,27 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using TaskBucket.Scheduling.Options;
 using TaskBucket.Scheduling.Scheduler;
 
 namespace TaskBucket.Scheduling.HostedService
 {
     internal class TaskScheduleHost : IHostedService, IDisposable
     {
-        private readonly TimeSpan _schedulerRunFrequency = TimeSpan.FromSeconds(1);
-
         private readonly ILogger _logger;
-
         private readonly ITaskScheduler _taskScheduler;
-
-        private Timer _scheduleTimer;
+        private readonly ITaskSchedulerOptions _options;
 
         private bool _enabled;
+        private Timer _scheduleTimer;
 
-        public TaskScheduleHost(ILogger<TaskScheduleHost> logger, Scheduler.ITaskScheduler taskScheduler)
+        public TaskScheduleHost(ILogger<TaskScheduleHost> logger, ITaskScheduler taskScheduler, ITaskSchedulerOptions options)
         {
             _logger = logger;
 
             _taskScheduler = taskScheduler ?? throw new ArgumentNullException(nameof(taskScheduler));
+
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -35,9 +35,9 @@ namespace TaskBucket.Scheduling.HostedService
 
             _enabled = true;
 
-            _scheduleTimer = new Timer(RunScheduler, null, TimeSpan.Zero, _schedulerRunFrequency);
+            _scheduleTimer = new Timer(RunScheduler, null, TimeSpan.Zero, _options.TaskSchedulerCheckInterval);
 
-            _logger.LogInformation("TaskBucket.TaskScheduler has Started");
+            _logger?.LogInformation("Has Started");
 
             return Task.CompletedTask;
         }
@@ -54,7 +54,7 @@ namespace TaskBucket.Scheduling.HostedService
             // Stops the scheduler from being invoked again
             _scheduleTimer.Change(Timeout.Infinite, Timeout.Infinite);
 
-            _logger.LogInformation("TaskBucket.TaskScheduler has stopped.");
+            _logger?.LogInformation("Has stopped.");
 
             return Task.CompletedTask;
         }
@@ -77,6 +77,7 @@ namespace TaskBucket.Scheduling.HostedService
 
             GC.SuppressFinalize(this);
         }
+
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed)
@@ -86,7 +87,7 @@ namespace TaskBucket.Scheduling.HostedService
 
             if (disposing)
             {
-                _logger?.LogTrace("TaskBucket.TaskScheduler has been disposed.");
+                _logger?.LogTrace("Has been disposed.");
 
                 _scheduleTimer?.Dispose();
             }
@@ -94,6 +95,6 @@ namespace TaskBucket.Scheduling.HostedService
             _disposed = true;
         }
 
-        #endregion
+        #endregion IDisposable
     }
 }

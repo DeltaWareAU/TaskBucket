@@ -1,34 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <Authors>Bradley Clarke</Authors>
     <Company>DeltaWare</Company>
     <Copyright>Copyright (c) 2020 DeltaWare</Copyright>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageIcon>nuget_logo.png</PackageIcon>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <Description>Hasle free asynchronous background tasks</Description>
     <PackageTags>Tasks; Background; Async; Asynchronous; Pooling</PackageTags>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>1.0.0.14-prerelease</Version>
-    <PackageReleaseNotes>ADDED | IInvokableTask, this allows for a task to be added without action defition - EG AddBackgroundTask&lt;MyInvokableTask&gt;();
-
-ADDED | ITaskSchedule in preporation for cron tasks and scheduled tasks.
-ADDED | TaskPool, this will run all background tasks
-
-CHANGED | ISchedule to internal
-CHANGED | ScheduleHost to internal
-CHANGED | Scheduling to only handle scheduling tasks based on times. ITaskPool will now handle running tasks</PackageReleaseNotes>
+    <Version>5.0.0.1</Version>
+    <PackageReleaseNotes></PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/DeltaWareAU/TaskBucket</PackageProjectUrl>
     <RepositoryUrl>https://github.com/DeltaWareAU/TaskBucket</RepositoryUrl>
     <RepositoryType>GIT</RepositoryType>
     <NeutralLanguage>en-AU</NeutralLanguage>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cronos" Version="0.7.0" />
+    <PackageReference Include="Cronos" Version="0.7.1" />
+    <PackageReference Include="DeltaWare.SDK.Core" Version="5.0.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
@@ -43,6 +38,10 @@ CHANGED | Scheduling to only handle scheduling tasks based on times. ITaskPool w
     <None Include="..\..\nuget_logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
 

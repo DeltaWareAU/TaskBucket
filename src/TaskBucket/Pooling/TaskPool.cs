@@ -5,44 +5,50 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TaskBucket.Extensions;
 using TaskBucket.Pooling.Options;
-using TaskBucket.Scheduling.Scheduler;
 using TaskBucket.Tasks;
-using TaskStatus = TaskBucket.Tasks.Enums.TaskStatus;
+using TaskBucket.Tasks.Asynchronous;
+using TaskBucket.Tasks.Enums;
+using TaskBucket.Tasks.Synchronous;
 
 namespace TaskBucket.Pooling
 {
     internal class TaskPool : ITaskPool
     {
+        private readonly CancellationTokenSource _cancellationSource = new();
         private readonly ILogger _logger;
 
-        private readonly IServiceProvider _services;
-
         private readonly ITaskPoolOptions _options;
+        private readonly IServiceProvider _services;
+        private readonly PriorityTaskQueue _taskQueue = new();
 
-        private readonly CancellationTokenSource _cancellationSource = new CancellationTokenSource();
+        private readonly Timer _trimQueueTimer;
+        private readonly ITaskDetails[] _workerThreads;
 
-        private readonly ConcurrentTaskQueue _taskQueue = new ConcurrentTaskQueue();
+        public bool IsRunning => _workerThreads.Any(i => i is { State: TaskState.Running });
 
-        private readonly ITask[] _threadPool;
+        public int ExecutingTaskCount => _workerThreads.Count(i => i is { State: TaskState.Running });
 
-        public bool IsRunning => _threadPool.Any(i => i != null);
-
-        public TaskPool(ITaskPoolOptions options, IServiceProvider services, ILogger<ITaskScheduler> logger)
+        public TaskPool(ITaskPoolOptions options, IServiceProvider services, ILogger<ITaskPool> logger)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _services = services ?? throw new ArgumentNullException(nameof(services));
 
             _logger = logger;
 
-            _threadPool = new ITask[_options.MaxConcurrentThreads];
-        }
+            int threadCount = Environment.ProcessorCount;
 
-        public void EnqueueTask(ITask task)
-        {
-            _logger?.LogInformation($"Adding new Task:{task.Identity}");
+            if (_options.WorkerThreadCount > threadCount)
+            {
+                _logger?.LogWarning("The specified WorkerThread count of {threadCount} is greater than the systems thread count of {threadCount} and may cause a degradation in performance.", _options.WorkerThreadCount, threadCount);
+            }
 
-            _taskQueue.Enqueue(task);
+            _workerThreads = new ITaskDetails[_options.WorkerThreadCount];
+
+            _logger?.LogDebug("A new instance of {nameof} has been instantiated with {threadCount} WorkerThreads", nameof(TaskPool), _workerThreads.Length);
+
+            _trimQueueTimer = new Timer(TrimQueue, null, TimeSpan.Zero, _options.TaskQueueTrimInterval);
         }
 
         public void CancelAllCancellableTasks()
@@ -52,65 +58,119 @@ namespace TaskBucket.Pooling
                 return;
             }
 
+            _logger?.LogDebug("Cancelling all tasks that inherit {nameof}", nameof(ICancellableTask));
+
             _cancellationSource.Cancel();
         }
 
+        public void EnqueueTask(ITaskDetails task)
+        {
+            _logger?.LogDebug("Task[{taskId}] Has been added to the pool and will be processed when a worker thread becomes available.", task.Identity);
+
+            _taskQueue.Enqueue(task);
+        }
+
+        /// <summary>
+        /// Checks to see if there is a worker thread open, if there is the task is assigned and started.
+        /// </summary>
         public Task StartPendingTasksAsync()
         {
-            // Check thread space availability.
-            List<Task> runningTasks = new List<Task>();
+            List<Task> tasksStarted = new List<Task>();
 
-            for (int i = 0; i < _threadPool.Length; i++)
+            for (int i = 0; i < _workerThreads.Length; i++)
             {
-                if (_threadPool[i] != null && (_threadPool[i].Status == TaskStatus.Pending || _threadPool[i].Status == TaskStatus.Running))
+                if (_workerThreads[i]?.State is TaskState.Pending or TaskState.Running)
                 {
                     // This thread is currently in use so we skip it.
                     continue;
                 }
 
-                // This thread is empty so we can try to queue up a new task.
-                if (!_taskQueue.TryDequeue(out ITask task))
+                if (!_taskQueue.TryDequeue(out ITaskDetails task))
                 {
                     // As there are no pending tasks, we exit the loop.
                     return Task.CompletedTask;
                 }
 
-                _threadPool[i] = task;
+                if (task.Options.InstanceLimit == InstanceLimit.Single && IsTaskInstanceRunning(task))
+                {
+                    _logger?.LogDebug("Task[{taskId}] has not been started as a previous instance of it is still running.", task.Identity);
 
-                runningTasks.Add(StartTaskAsync(task, i));
+                    // An instance of this task is currently running, so we won't start it.
+                    continue;
+                }
+
+                // Assigned the current task to a worker thread and start it.
+                _workerThreads[i] = task;
+
+                tasksStarted.Add(StartTaskAsync(task, i));
             }
 
-            _logger?.LogDebug("TaskBucket.TaskPool has started {taskCount} background tasks", runningTasks.Count);
-
-            return Task.WhenAll(runningTasks);
+            return Task.WhenAll(tasksStarted);
         }
 
-        private async Task StartTaskAsync(ITask task, int threadIndex)
+        private bool IsTaskInstanceRunning(ITaskDetails task)
         {
-            await Task.Factory.StartNew(async () =>
+            return _workerThreads.Any(t =>
+                t != null &&
+                t.Identity == task.PreviouslyRanInstance.Identity &&
+                t.State is TaskState.Pending or TaskState.Running);
+        }
+
+        private async Task StartTaskAsync(ITaskDetails task, int threadIndex)
+        {
+            IServiceScope scope = null;
+
+            object serviceInstance;
+
+            try
             {
-                IServiceScope scope = null;
+                _logger?.LogTrace("WorkerThread[{threadIndex}].Task[{taskId}] Creating scope.", threadIndex, task.Identity);
 
-                try
+                scope = _services.CreateScope();
+
+                serviceInstance = scope.ServiceProvider.GetService(task.ServiceType);
+            }
+            catch (Exception e)
+            {
+                scope?.Dispose();
+
+                _logger?.LogError(e, "WorkerThread[{threadIndex}].Task[{taskId}] Encountered an exception whilst creating its scope.", threadIndex, task.Identity);
+
+                return;
+            }
+
+            try
+            {
+                _logger?.LogDebug("WorkerThread[{threadIndex}].Task[{taskId}] Has Started.", threadIndex, task.Identity);
+
+                if (task is IAsynchronousTask asyncTask)
                 {
-                    _logger.LogDebug($"Task: {task.Identity} has Started");
-
-                    scope = _services.CreateScope();
-
-                    await task.StartAsync(scope.ServiceProvider, threadIndex, _cancellationSource.Token);
-
-                    _logger.LogDebug($"Task: {task.Identity} has Ended");
+                    await asyncTask.RunTaskAsync(serviceInstance, threadIndex, _cancellationSource.Token);
                 }
-                catch (Exception e)
+                else if (task is ISynchronousTask syncTask)
                 {
-                    _logger.LogWarning(e, "An exception occurred whilst trying to start Task:{taskId}",
-                        task.Identity);
+                    syncTask.RunTask(serviceInstance, threadIndex, _cancellationSource.Token);
                 }
-                finally
-                {
-                    scope?.Dispose();
-                }
-            });
+
+                _logger?.LogInformation("WorkerThread[{threadIndex}].Task[{taskId}] Completed successfully in {time}.", threadIndex, task.Identity, task.ExecutionTime.ToHumanTimeString());
+            }
+            catch (Exception e)
+            {
+                _logger?.LogWarning(e, "WorkerThread[{threadIndex}].Task[{taskId}] Encountered an exception.", threadIndex, task.Identity);
+            }
+            finally
+            {
+                _logger?.LogTrace("WorkerThread[{threadIndex}].Task[{taskId}] Disposed scope.", threadIndex, task.Identity);
+
+                scope.Dispose();
+            }
+        }
+
+        private void TrimQueue(object state)
+        {
+            _logger?.LogDebug("Trimming Task Queue");
+
+            _taskQueue.Trim();
         }
     }
 }

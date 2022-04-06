@@ -6,48 +6,94 @@ namespace TaskBucket.Options
 {
     internal class TaskBucketOptionsBuilder : ITaskBucketOptionsBuilder
     {
-        private TimeSpan _checkPendingTasksFrequency = TimeSpan.FromSeconds(1);
+        private TimeSpan _taskQueueTrimInterval = TimeSpan.FromMinutes(2);
+        private TimeSpan _taskQueueCheckingInterval = TimeSpan.FromMilliseconds(50);
+        private TimeSpan _taskSchedulerCheckInterval = TimeSpan.FromMinutes(1);
 
-        public int MaxConcurrentThreads { get; set; } = Environment.ProcessorCount;
-
+        /// <inheritdoc/>
         public TimeZoneInfo TimeZone { get; set; } = TimeZoneInfo.Local;
 
-        public void SetTaskCheckingFrequency(int milliseconds)
-        {
-            _checkPendingTasksFrequency = TimeSpan.FromMilliseconds(milliseconds);
-        }
+        /// <inheritdoc/>
+        public int WorkerThreadCount { get; set; } = Environment.ProcessorCount;
 
-        public void SetTaskCheckingFrequency(TimeSpan time)
-        {
-            _checkPendingTasksFrequency = time;
-        }
-
-        public ITaskBucketOptions BuildBucketOptions()
-        {
-            TaskBucketOptions options = new TaskBucketOptions();
-
-            return options;
-        }
-
+        /// <summary>
+        /// Builds a new instance of <see cref="ITaskSchedulerOptions"/> using the provided configuration.
+        /// </summary>
         public ITaskSchedulerOptions BuildSchedulerOptions()
         {
-            TaskSchedulerOptions options = new TaskSchedulerOptions
+            TaskSchedulerOptions options = new()
             {
-                TimeZone = TimeZone
+                TimeZone = TimeZone,
+                TaskSchedulerCheckInterval = _taskSchedulerCheckInterval
             };
 
             return options;
         }
 
+        /// <summary>
+        /// Builds a new instance of <see cref="ITaskPoolOptions"/> using the provided configuration.
+        /// </summary>
         public ITaskPoolOptions BuildTaskPoolOptions()
         {
-            TaskPoolOptions options = new TaskPoolOptions
+            TaskPoolOptions options = new()
             {
-                MaxConcurrentThreads = MaxConcurrentThreads,
-                CheckPendingTasksFrequency = _checkPendingTasksFrequency
+                WorkerThreadCount = WorkerThreadCount,
+                TaskQueueCheckingInterval = _taskQueueCheckingInterval,
+                TaskQueueTrimInterval = _taskQueueTrimInterval
             };
 
             return options;
+        }
+
+        /// <inheritdoc/>
+        public void SetTaskQueueCheckingInterval(int interval)
+        {
+            if (interval <= 0)
+            {
+                throw new ArgumentException("The interval must be greater than 0", nameof(interval));
+            }
+
+            _taskQueueCheckingInterval = TimeSpan.FromMilliseconds(interval);
+        }
+
+        /// <inheritdoc/>
+        public void SetTaskQueueCheckingInterval(TimeSpan interval)
+        {
+            _taskQueueCheckingInterval = interval;
+        }
+
+        /// <inheritdoc/>
+        public void SetTaskQueueTrimInterval(int interval)
+        {
+            if (interval <= 0)
+            {
+                throw new ArgumentException("The interval must be greater than 0", nameof(interval));
+            }
+
+            _taskQueueTrimInterval = TimeSpan.FromMilliseconds(interval);
+        }
+
+        /// <inheritdoc/>
+        public void SetTaskQueueTrimInterval(TimeSpan interval)
+        {
+            _taskQueueTrimInterval = interval;
+        }
+
+        /// <inheritdoc/>
+        public void SetTaskSchedulerCheckInterval(int interval)
+        {
+            if (interval <= 0)
+            {
+                throw new ArgumentException("The interval must be greater than 0", nameof(interval));
+            }
+
+            _taskSchedulerCheckInterval = TimeSpan.FromMilliseconds(interval);
+        }
+
+        /// <inheritdoc/>
+        public void SetTaskSchedulerCheckInterval(TimeSpan interval)
+        {
+            _taskSchedulerCheckInterval = interval;
         }
     }
 }

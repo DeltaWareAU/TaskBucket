@@ -9,7 +9,7 @@ using TaskBucket.Scheduling.Scheduler;
 // ReSharper disable once CheckNamespace
 namespace TaskBucket
 {
-    public static class ServiceCollectionExtensions
+    public static class TaskBucketServiceCollection
     {
         /// <summary>
         /// Adds Task Bucket to Dependency Injection
@@ -26,16 +26,18 @@ namespace TaskBucket
 
             optionsFactory?.Invoke(optionsBuilder);
 
-            services.AddSingleton(optionsBuilder.BuildTaskPoolOptions());
-            services.AddSingleton<ITaskPool, TaskPool>();
-            services.AddHostedService<TaskPoolHost>();
+            services
+                .AddSingleton(optionsBuilder.BuildTaskPoolOptions())
+                .AddSingleton<ITaskPool, TaskPool>()
+                .AddHostedService<TaskPoolHost>();
 
-            services.AddSingleton(optionsBuilder.BuildSchedulerOptions());
-            services.AddSingleton<ITaskScheduler, TaskScheduler>();
-            services.AddHostedService<TaskScheduleHost>();
+            services
+                .AddSingleton(optionsBuilder.BuildSchedulerOptions())
+                .AddSingleton<ITaskScheduler, TaskScheduler>()
+                .AddHostedService<TaskScheduleHost>();
 
-            services.AddSingleton(optionsBuilder.BuildBucketOptions());
-            services.AddSingleton<ITaskBucket, TaskBucket>();
+            services
+                .AddSingleton<ITaskBucket, TaskBucket>();
         }
     }
 }

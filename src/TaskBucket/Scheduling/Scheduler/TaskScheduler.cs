@@ -5,19 +5,17 @@ using System.Linq;
 using TaskBucket.Pooling;
 using TaskBucket.Scheduling.Options;
 using TaskBucket.Tasks;
-using TaskBucket.Tasks.Enums;
 
 namespace TaskBucket.Scheduling.Scheduler
 {
     internal class TaskScheduler : ITaskScheduler
     {
+        private readonly object _concurrencyLock = new();
         private readonly ILogger _logger;
 
-        private readonly ITaskPool _taskPool;
-
         private readonly ITaskSchedulerOptions _options;
-
-        private readonly SortedList<DateTime, List<ITask>> _taskSchedule = new SortedList<DateTime, List<ITask>>();
+        private readonly Dictionary<DateTime, List<ITaskDetails>> _scheduledTasks = new();
+        private readonly ITaskPool _taskPool;
 
         public TaskScheduler(ITaskSchedulerOptions options, ITaskPool taskPool, ILogger<ITaskScheduler> logger)
         {
@@ -27,55 +25,69 @@ namespace TaskBucket.Scheduling.Scheduler
             _logger = logger;
         }
 
-        public void ScheduleTask(ITask task)
+        public void RunScheduler()
+        {
+            List<DateTime> completedSchedules = new();
+            List<ITaskDetails> pendingTasks = new();
+
+            lock (_concurrencyLock)
+            {
+                DateTime currentTime = DateTime.UtcNow;
+
+                foreach (KeyValuePair<DateTime, List<ITaskDetails>> taskSchedules in _scheduledTasks.Where(t => currentTime > t.Key))
+                {
+                    completedSchedules.Add(taskSchedules.Key);
+                    pendingTasks.AddRange(taskSchedules.Value);
+                }
+
+                // Cleanup old task schedules
+                foreach (DateTime completedSchedule in completedSchedules)
+                {
+                    _scheduledTasks.Remove(completedSchedule);
+                }
+            }
+
+            // Process Pending Tasks
+            foreach (ITaskDetails pendingTask in pendingTasks)
+            {
+                ScheduleTask(pendingTask.Copy());
+
+                _taskPool.EnqueueTask(pendingTask);
+            }
+        }
+
+        public void ScheduleTask(ITaskDetails task)
         {
             if (task.Options.Schedule == null)
             {
-                throw new ArgumentNullException(nameof(task.Options.Schedule),
-                    "A Task Schedule must be set before scheduling a task");
+                throw new ArgumentNullException(nameof(task.Options.Schedule), "A Task Schedule must be set before scheduling a task");
             }
 
             DateTime? nextRun = task.Options.Schedule.GetNextSchedule(DateTime.UtcNow, _options.TimeZone);
 
             if (nextRun == null)
             {
-                // A null next run date means we won't be running the task again.
+                _logger?.LogInformation("Task[{taskId}] Has completed its schedule and will no longer be ran.", task.Identity);
+
+                // If the next return date returns null it means the task has completed its schedule
+                // and won't be run again.
                 return;
             }
 
-            if (_taskSchedule.TryGetValue(nextRun.Value, out List<ITask> tasks))
+            lock (_concurrencyLock)
             {
-                tasks.Add(task);
-            }
-            else
-            {
-                tasks = new List<ITask>
+                if (_scheduledTasks.TryGetValue(nextRun.Value, out List<ITaskDetails> tasks))
                 {
-                    task
-                };
-
-                _taskSchedule.Add(nextRun.Value, tasks);
-            }
-        }
-
-        public void RunScheduler()
-        {
-            DateTime currentTime = DateTime.UtcNow;
-
-            List<KeyValuePair<DateTime, List<ITask>>> pendingTasks = _taskSchedule.Where(t => currentTime > t.Key).ToList();
-
-            foreach (KeyValuePair<DateTime, List<ITask>> scheduledTasks in pendingTasks)
-            {
-                // Removed the DateTime task List as this is no longer valid.
-                _taskSchedule.Remove(scheduledTasks.Key);
-
-                foreach (ITask scheduledTask in scheduledTasks.Value)
+                    tasks.Add(task);
+                }
+                else
                 {
-                    _taskPool.EnqueueTask(scheduledTask);
-                    
-                    // Reschedule the task in case it may need to run again.
-                    // When a task is rescheduled a new instance of it will be created - this ensures unique tasks.
-                    ScheduleTask(scheduledTask.Copy());
+                    tasks = new List<ITaskDetails>
+                    {
+                        task
+                    };
+
+                    _scheduledTasks.Add(nextRun.Value, tasks);
                 }
             }
         }

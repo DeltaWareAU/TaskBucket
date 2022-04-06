@@ -4,7 +4,13 @@ namespace TaskBucket.Pooling.Options
 {
     internal class TaskPoolOptions : ITaskPoolOptions
     {
-        public int MaxConcurrentThreads { get; set; }
-        public TimeSpan CheckPendingTasksFrequency { get; set; }
+        /// <inheritdoc/>
+        public TimeSpan TaskQueueCheckingInterval { get; set; }
+
+        /// <inheritdoc/>
+        public TimeSpan TaskQueueTrimInterval { get; set; }
+
+        /// <inheritdoc/>
+        public int WorkerThreadCount { get; set; }
     }
 }
