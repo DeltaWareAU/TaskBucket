@@ -20,6 +20,8 @@ namespace TaskBucket.Pooling
         private readonly ILogger _logger;
 
         private readonly ITaskPoolOptions _options;
+
+        // TODO: This should be an IServiceScopeFactory.
         private readonly IServiceProvider _services;
         private readonly PriorityTaskQueue _taskQueue = new();
 
