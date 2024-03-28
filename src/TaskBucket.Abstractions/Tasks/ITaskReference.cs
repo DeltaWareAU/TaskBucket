@@ -1,4 +1,6 @@
-﻿namespace TaskBucket.Abstractions.Tasks
+﻿using TaskBucket.Abstractions.Tasks.Options;
+
+namespace TaskBucket.Abstractions.Tasks
 {
     public interface ITaskReference
     {
@@ -11,7 +13,7 @@
         /// <summary>
         /// Specifies the Execution Time of the Task
         /// </summary>
-        TimeSpan ExecutionTime { get; }
+        TimeSpan? ExecutionTime { get; }
 
         /// <summary>
         /// Specifies the Identity of the Task
@@ -27,13 +29,7 @@
         /// Specifies the Bucket Index of the Task
         /// </summary>
         int BucketIndex { get; }
-    }
 
-    /// <summary>
-    /// References a Task
-    /// </summary>
-    public interface ITaskReference<out TResult> : ITaskReference
-    {
-        TResult Result { get; }
+        ITaskOptions Options { get; }
     }
 }
